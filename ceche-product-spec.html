@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ceche — Domain Appraisal Engine — Product Specification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EAEDF1;
+    --paper-raised:#F4F6F8;
+    --ink:#1B2A41;
+    --ink-soft:#4A5A72;
+    --line:#C9D2DC;
+    --seal:#A8823D;
+    --seal-deep:#7C5E28;
+    --free:#2E6B4F;
+    --free-bg:#E4F0EA;
+    --manual:#8A5A1E;
+    --manual-bg:#F3E7D4;
+    --infra:#3E4F6B;
+    --infra-bg:#E3E7EF;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.6;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 28px 120px;}
+
+  /* HERO */
+  .hero{
+    background:var(--ink);
+    color:var(--paper);
+    padding:72px 28px 56px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute;
+    top:-40%;right:-10%;
+    width:520px;height:520px;
+    border:1px solid rgba(234,237,241,0.08);
+    border-radius:50%;
+  }
+  .hero::after{
+    content:"";
+    position:absolute;
+    top:-25%;right:2%;
+    width:380px;height:380px;
+    border:1px solid rgba(234,237,241,0.06);
+    border-radius:50%;
+  }
+  .hero-inner{max-width:920px;margin:0 auto;position:relative;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--seal);
+    margin-bottom:18px;
+  }
+  h1.title{
+    font-family:'Source Serif 4',serif;
+    font-weight:700;
+    font-size:44px;
+    line-height:1.12;
+    margin:0 0 16px;
+    max-width:640px;
+  }
+  .hero p.lede{
+    font-size:16.5px;
+    color:#C4CDDA;
+    max-width:560px;
+    margin:0 0 30px;
+  }
+  .hero-meta{
+    display:flex;
+    gap:36px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:#8996AB;
+    border-top:1px solid rgba(234,237,241,0.15);
+    padding-top:20px;
+    flex-wrap:wrap;
+  }
+  .hero-meta strong{color:var(--paper);font-weight:500;}
+
+  /* SECTIONS */
+  section{padding:52px 0 0;}
+  h2.section-head{
+    font-family:'Source Serif 4',serif;
+    font-size:26px;
+    font-weight:600;
+    margin:0 0 6px;
+    color:var(--ink);
+  }
+  .section-sub{
+    font-size:14.5px;
+    color:var(--ink-soft);
+    margin:0 0 24px;
+    max-width:640px;
+  }
+
+  /* SUMMARY TABLE */
+  .cost-summary{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:22px 24px;
+    margin:24px 0 8px;
+  }
+  .cost-summary table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .cost-summary th{
+    text-align:left;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:500;
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    border-bottom:1px solid var(--line);
+    padding:0 10px 10px 0;
+  }
+  .cost-summary td{
+    padding:9px 10px 9px 0;
+    border-bottom:1px solid #DCE2E9;
+    vertical-align:top;
+  }
+  .cost-summary tr:last-child td{border-bottom:none;}
+
+  /* MODULE CARD */
+  .module{
+    position:relative;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:26px 28px 24px;
+    margin-bottom:22px;
+  }
+  .module-head{
+    display:flex;
+    align-items:flex-start;
+    gap:16px;
+    margin-bottom:14px;
+  }
+  .seal-badge{
+    flex:0 0 auto;
+    width:46px;height:46px;
+    border:1.5px solid var(--seal-deep);
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:16px;
+    color:var(--seal-deep);
+    transform:rotate(-4deg);
+    background:repeating-linear-gradient(135deg, rgba(168,130,61,0.05) 0, rgba(168,130,61,0.05) 2px, transparent 2px, transparent 6px);
+  }
+  .module-title{
+    font-family:'Source Serif 4',serif;
+    font-size:19px;
+    font-weight:600;
+    margin:0 0 4px;
+    color:var(--ink);
+  }
+  .module-role{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0;
+  }
+  .tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    padding:3px 8px;
+    border-radius:3px;
+    margin:0 6px 6px 0;
+  }
+  .tag.free{background:var(--free-bg);color:var(--free);}
+  .tag.manual{background:var(--manual-bg);color:var(--manual);}
+  .tag.infra{background:var(--infra-bg);color:var(--infra);}
+
+  .module-body{font-size:14px;color:var(--ink);}
+  .module-body p{margin:0 0 10px;}
+  .field{
+    display:grid;
+    grid-template-columns:110px 1fr;
+    gap:10px;
+    font-size:13.5px;
+    padding:6px 0;
+    border-top:1px solid #DCE2E9;
+  }
+  .field:first-of-type{border-top:none;margin-top:10px;}
+  .field-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    padding-top:2px;
+  }
+  .field-value a{color:var(--seal-deep);text-decoration:none;border-bottom:1px solid rgba(168,130,61,0.4);}
+  .field-value a:hover{border-bottom-color:var(--seal-deep);}
+  code{
+    font-family:'IBM Plex Mono',monospace;
+    background:#DCE2E9;
+    padding:1px 5px;
+    border-radius:3px;
+    font-size:12.5px;
+  }
+
+  /* BUILD ORDER */
+  .order-list{list-style:none;padding:0;margin:0;counter-reset:step;}
+  .order-list li{
+    counter-increment:step;
+    position:relative;
+    padding:14px 0 14px 44px;
+    border-bottom:1px solid var(--line);
+    font-size:14.5px;
+  }
+  .order-list li:last-child{border-bottom:none;}
+  .order-list li::before{
+    content:counter(step);
+    position:absolute;left:0;top:12px;
+    width:28px;height:28px;
+    border-radius:50%;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .order-list strong{display:block;font-family:'Source Serif 4',serif;font-size:15.5px;margin-bottom:2px;}
+  .order-list span{color:var(--ink-soft);font-size:13.5px;}
+
+  /* FOOTER NOTE */
+  .footnote{
+    margin-top:56px;
+    padding-top:24px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .footnote strong{color:var(--ink);}
+
+  @media (max-width:640px){
+    h1.title{font-size:32px;}
+    .field{grid-template-columns:1fr;gap:2px;}
+    .hero-meta{gap:20px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Product Specification · v1.0</div>
+    <h1 class="title">Ceche — Domain Appraisal Engine</h1>
+    <p class="lede">A 15-module scoring architecture for valuing any domain string — registered or unregistered — with zero bias toward domains that already have history. Built entirely on free-tier and self-hosted tooling for a $0–$2/month operating budget.</p>
+    <div class="hero-meta">
+      <div>MODULES <strong>15</strong></div>
+      <div>MONTHLY COST <strong>$0.00</strong></div>
+      <div>SIGNUP REQUIRED <strong>7 of 15</strong></div>
+      <div>PAID API KEYS <strong>0</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<section>
+  <h2 class="section-head">How to read this document</h2>
+  <p class="section-sub">Each of the 15 modules below is a self-contained tool your AI agent calls. Every one is tagged by cost model:</p>
+  <p>
+    <span class="tag free">Free API</span> — genuinely free, no card, callable programmatically, no manual step.
+    <span class="tag manual">Manual lookup</span> — free, but requires the agent (or you) to browse/read a page rather than call a clean API. Fine at low volume, per your note.
+    <span class="tag infra">Self-hosted</span> — runs on your own machine/server, zero third-party cost.
+  </p>
+</section>
+
+<section>
+  <h2 class="section-head">Cost & signup summary</h2>
+  <p class="section-sub">The full picture before the detail. Nothing on this list charges you a recurring fee.</p>
+  <div class="cost-summary">
+    <table>
+      <tr><th>#</th><th>Module</th><th>Cost model</th><th>Signup needed?</th></tr>
+      <tr><td>1</td><td>WHOIS / RDAP + cross-TLD check</td><td>Free</td><td>No</td></tr>
+      <tr><td>2</td><td>TLD score table</td><td>Free (self-built)</td><td>No</td></tr>
+      <tr><td>3</td><td>Character length scorer</td><td>Free (local code)</td><td>No</td></tr>
+      <tr><td>4</td><td>Word-count scorer</td><td>Free (local code)</td><td>No</td></tr>
+      <tr><td>5</td><td>Pronounceability scorer</td><td>Free (local library)</td><td>No</td></tr>
+      <tr><td>6</td><td>Segmenter (multi-way split)</td><td>Free (local library)</td><td>No</td></tr>
+      <tr><td>7</td><td>Keyword popularity</td><td>Free (unofficial API)</td><td>No (Google account recommended)</td></tr>
+      <tr><td>8</td><td>CPC / commercial-intent</td><td>Free, manual</td><td>Yes — Microsoft account</td></tr>
+      <tr><td>9</td><td>Search-results checker</td><td>Free tier (100–1,000/mo)</td><td>Yes — Google + Brave</td></tr>
+      <tr><td>10</td><td>Cross-TLD parked-variant check</td><td>Free (reuses #1)</td><td>No</td></tr>
+      <tr><td>11</td><td>Trademark check</td><td>Free</td><td>No</td></tr>
+      <tr><td>12</td><td>Backlink / history / age checker</td><td>Free tier</td><td>Yes — Moz</td></tr>
+      <tr><td>13</td><td>Confidence / completeness flag</td><td>Free (local logic)</td><td>No</td></tr>
+      <tr><td>14</td><td>Caching layer</td><td>Free (self-hosted)</td><td>No</td></tr>
+      <tr><td>15</td><td>Pricing / valuation module</td><td>Free, manual (for now)</td><td>No</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2 class="section-head">The 15 modules</h2>
+  <p class="section-sub">Full detail: what each tool does, exactly which free service or library covers it, and the direct signup link.</p>
+
+  <!-- MODULE 1 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">01</div>
+      <div>
+        <p class="module-title">WHOIS / RDAP Lookup + Cross-TLD Check</p>
+        <p class="module-role">Registration status, domain age, registrar, expiry — plus checking whether the same string exists on other TLDs.</p>
+      </div>
+    </div>
+    <div><span class="tag free">Free API</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value">RDAP (Registration Data Access Protocol) — the ICANN-mandated free successor to WHOIS.</div></div>
+      <div class="field"><div class="field-label">Signup</div><div class="field-value"><a href="https://rdap.org" target="_blank">rdap.org</a> — no account, no key. Query directly or via bootstrap endpoints.</div></div>
+      <div class="field"><div class="field-label">Notes</div><div class="field-value">Run this same query per candidate TLD (<code>.com</code>, <code>.net</code>, <code>.co</code>, <code>.xyz</code> etc.) — one call type covers both registration status and the cross-TLD conflict check.</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 2 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">02</div>
+      <div>
+        <p class="module-title">TLD Score Table</p>
+        <p class="module-role">A static lookup table ranking each TLD's baseline market value (.com highest, down to low-value new gTLDs).</p>
+      </div>
+    </div>
+    <div><span class="tag free">Self-built</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value">No API — a table you build and update yourself, seeded from public comparable-sales data.</div></div>
+      <div class="field"><div class="field-label">Source data</div><div class="field-value"><a href="https://namebio.com" target="_blank">NameBio.com</a> — free, browsable public sales history, no login required to view.</div></div>
+      <div class="field"><div class="field-label">Notes</div><div class="field-value">Revisit quarterly — TLD standing shifts (e.g. .ai's premium rose sharply in recent years).</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 3 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">03</div>
+      <div>
+        <p class="module-title">Character Length Scorer</p>
+        <p class="module-role">Raw character count → score. Shorter scores higher, independent of word count.</p>
+      </div>
+    </div>
+    <div><span class="tag infra">Local code</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value">Pure computation — <code>len(domain_string)</code> mapped through a scoring curve you define. No external dependency at all.</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 4 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">04</div>
+      <div>
+        <p class="module-title">Word-Count Scorer</p>
+        <p class="module-role">Separate from length: 1 real word scores higher than 2, which scores higher than 3+.</p>
+      </div>
+    </div>
+    <div><span class="tag infra">Local code</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value">Not a standalone API — reads the <code>word_count</code> field from Module 6's winning segmentation and applies a penalty curve.</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 5 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">05</div>
+      <div>
+        <p class="module-title">Pronounceability Scorer</p>
+        <p class="module-role">Separates "yotop" (sayable) from "fjfbfj" (not) — before any dictionary lookup happens.</p>
+      </div>
+    </div>
+    <div><span class="tag free">Free library</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value">CMU Pronouncing Dictionary + <code>pyphen</code> for syllable/phonetic pattern checks. Both run locally, fully open-source.</div></div>
+      <div class="field"><div class="field-label">Install</div><div class="field-value"><a href="https://pypi.org/project/pyphen/" target="_blank">pypi.org/project/pyphen</a> · <a href="https://www.nltk.org/" target="_blank">nltk.org</a> (bundles the CMU dict corpus)</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 6 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">06</div>
+      <div>
+        <p class="module-title">Segmenter — Multi-Way Split Engine</p>
+        <p class="module-role">Breaks a string into every valid 1-, 2-, and 3+-word reading (e.g. "beastar" → "be"+"a"+"star" AND "beast"+"ar"), scores each candidate, and surfaces the strongest plus alternates.</p>
+      </div>
+    </div>
+    <div><span class="tag free">Free library</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value"><code>wordfreq</code> package for word-frequency weighting, combined with a dynamic-programming word-break algorithm over a common-word list.</div></div>
+      <div class="field"><div class="field-label">Install</div><div class="field-value"><a href="https://pypi.org/project/wordfreq/" target="_blank">pypi.org/project/wordfreq</a> · word list: <a href="https://github.com/first20hours/google-10000-english" target="_blank">github.com/first20hours/google-10000-english</a></div></div>
+      <div class="field"><div class="field-label">Notes</div><div class="field-value">No valid split found → hands off cleanly to Module 5's pronounceability score instead of scoring zero.</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 7 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">07</div>
+      <div>
+        <p class="module-title">Keyword Popularity Lookup</p>
+        <p class="module-role">Per-segment search interest — tells you if "top" is a popular term and "fjfbfj" is not.</p>
+      </div>
+    </div>
+    <div><span class="tag free">Free, unofficial</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value"><code>pytrends</code> — an unofficial Python wrapper around Google Trends. Returns relative interest over time per term.</div></div>
+      <div class="field"><div class="field-label">Install</div><div class="field-value"><a href="https://github.com/GeneralMills/pytrends" target="_blank">github.com/GeneralMills/pytrends</a></div></div>
+      <div class="field"><div class="field-label">Manual fallback</div><div class="field-value"><a href="https://trends.google.com" target="_blank">trends.google.com</a> — agent can browse directly if the library gets rate-limited.</div></div>
+      <div class="field"><div class="field-label">Caution</div><div class="field-value">Scrape-based, not an official API — expect occasional rate-limit blocks. Route through the caching layer (Module 14) aggressively.</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 8 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">08</div>
+      <div>
+        <p class="module-title">CPC / Commercial-Intent Scorer</p>
+        <p class="module-role">Distinguishes a searched-but-informational term (e.g. "sad") from a genuinely valuable commercial one (e.g. "insurance").</p>
+      </div>
+    </div>
+    <div><span class="tag manual">Manual lookup</span><span class="tag free">Free signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value">Bing Webmaster Tools' Keyword Research feature — free once you have a Microsoft account, gives volume + CPC-adjacent competition data.</div></div>
+      <div class="field"><div class="field-label">Signup</div><div class="field-value"><a href="https://www.bing.com/webmasters" target="_blank">bing.com/webmasters</a></div></div>
+      <div class="field"><div class="field-label">Alt. manual option</div><div class="field-value">Ubersuggest's free Chrome extension (40 lookups/day, no paid plan needed): <a href="https://neilpatel.com/ubersuggest/extension/" target="_blank">neilpatel.com/ubersuggest/extension</a></div></div>
+      <div class="field"><div class="field-label">Note</div><div class="field-value">This is the one honest gap in the free stack — there is no clean free API for CPC data. Treat it as agent-assisted manual lookup until you can afford a real key (Google Ads API or DataForSEO).</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 9 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">09</div>
+      <div>
+        <p class="module-title">Search-Results Checker</p>
+        <p class="module-role">Searches the full domain string and reads the pattern: many related results → established concept; scattered unrelated results → brandable coinage; a competing TLD variant actively ranking → conflict flag.</p>
+      </div>
+    </div>
+    <div><span class="tag free">Free tier</span><span class="tag free">Signup required</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Primary tool</div><div class="field-value">Google Programmable Search Engine (Custom Search JSON API) — 100 free queries/day.</div></div>
+      <div class="field"><div class="field-label">Signup (1/2)</div><div class="field-value"><a href="https://programmablesearchengine.google.com/" target="_blank">programmablesearchengine.google.com</a> — create a search engine scoped to the whole web.</div></div>
+      <div class="field"><div class="field-label">Signup (2/2)</div><div class="field-value"><a href="https://developers.google.com/custom-search/v1/introduction" target="_blank">developers.google.com/custom-search/v1</a> — generate the API key.</div></div>
+      <div class="field"><div class="field-label">Backup tool</div><div class="field-value">Brave Search API — independent index, roughly 1,000 free queries/month. Signup: <a href="https://brave.com/search/api/" target="_blank">brave.com/search/api</a></div></div>
+      <div class="field"><div class="field-label">Correction</div><div class="field-value">Bing's Web Search API — mentioned earlier in this build-out — was fully retired by Microsoft on August 11, 2025, with no new signups possible. It is not a usable option anymore; Google CSE + Brave replace it above.</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 10 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">10</div>
+      <div>
+        <p class="module-title">Direct Cross-TLD Parked-Variant Check</p>
+        <p class="module-role">Distinct from trademark risk: flags whether a stronger-TLD variant of the same string is sitting parked, which could outrank you later if it wakes up.</p>
+      </div>
+    </div>
+    <div><span class="tag free">Reuses Module 1</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value">Same RDAP calls as Module 1, run against every common TLD variant, plus a lightweight HTTP GET/HEAD request to detect parked-page vs. live-content vs. no response.</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 11 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">11</div>
+      <div>
+        <p class="module-title">Trademark Check</p>
+        <p class="module-role">Flags live trademark conflicts on the segmented words or full string — a legal/reputational risk distinct from Module 10's competitive risk.</p>
+      </div>
+    </div>
+    <div><span class="tag free">Free API + manual</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">US trademarks</div><div class="field-value">USPTO TSDR — free, no key required. <a href="https://tsdr.uspto.gov/" target="_blank">tsdr.uspto.gov</a></div></div>
+      <div class="field"><div class="field-label">EU trademarks</div><div class="field-value">EUIPO eSearch — free, no key. <a href="https://euipo.europa.eu/eSearch/" target="_blank">euipo.europa.eu/eSearch</a></div></div>
+      <div class="field"><div class="field-label">Global brands</div><div class="field-value">WIPO Global Brand Database — free, manual search only (no official API). <a href="https://www3.wipo.int/branddb/en/" target="_blank">www3.wipo.int/branddb</a></div></div>
+      <div class="field"><div class="field-label">Dispute history</div><div class="field-value">WIPO UDRP case index — free, manual search. <a href="https://www.wipo.int/amc/en/domains/search/legalindex/" target="_blank">wipo.int/amc/en/domains/search/legalindex</a></div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 12 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">12</div>
+      <div>
+        <p class="module-title">Backlink / History / Age Checker</p>
+        <p class="module-role">Only activates for domains with prior use: backlink profile, authority, content history, prior penalties. Returns null cleanly for unregistered strings — never estimated.</p>
+      </div>
+    </div>
+    <div><span class="tag free">Free API</span><span class="tag free">Signup required</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Content history</div><div class="field-value">Wayback Machine CDX API — fully free, no key. <a href="https://archive.org/help/wayback_api.php" target="_blank">archive.org/help/wayback_api.php</a></div></div>
+      <div class="field"><div class="field-label">Authority metric</div><div class="field-value">Moz API — free tier with a limited number of calls/month. <a href="https://moz.com/products/api" target="_blank">moz.com/products/api</a></div></div>
+      <div class="field"><div class="field-label">Age</div><div class="field-value">Already available from Module 1's RDAP creation-date field — no extra tool needed.</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 13 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">13</div>
+      <div>
+        <p class="module-title">Confidence / Data-Completeness Flag</p>
+        <p class="module-role">Tags every appraisal with which modules returned real data vs. hit a quota or returned null — so a missing signal is never silently scored as zero.</p>
+      </div>
+    </div>
+    <div><span class="tag infra">Local logic</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value">Internal code — no external dependency. Each module call returns a status alongside its value; this module aggregates those statuses into one completeness score per appraisal.</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 14 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">14</div>
+      <div>
+        <p class="module-title">Caching Layer</p>
+        <p class="module-role">Caches lookups by term/segment, not by full domain — since fragments like "top," "shop," "get" repeat across thousands of queries and would otherwise burn free-tier quotas fast.</p>
+      </div>
+    </div>
+    <div><span class="tag infra">Self-hosted</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Recommended for MVP</div><div class="field-value">SQLite — built into Python, zero hosting cost, zero setup. <a href="https://www.sqlite.org/" target="_blank">sqlite.org</a></div></div>
+      <div class="field"><div class="field-label">Upgrade later</div><div class="field-value">Redis, once call volume justifies a dedicated cache process. <a href="https://redis.io/" target="_blank">redis.io</a> (self-hosted, free open source)</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE 15 -->
+  <div class="module">
+    <div class="module-head">
+      <div class="seal-badge">15</div>
+      <div>
+        <p class="module-title">Pricing / Valuation Module</p>
+        <p class="module-role">Converts the aggregate score into an actual dollar estimate, anchored against real comparable sales. Planned in more depth separately, per your note — this is the free starting point.</p>
+      </div>
+    </div>
+    <div><span class="tag manual">Manual lookup</span><span class="tag free">No signup</span></div>
+    <div class="module-body">
+      <div class="field"><div class="field-label">Tool</div><div class="field-value">NameBio's public sales database — browsable free, no login. No API without their paid data export, so for now the agent (or you) manually pulls comparable sales by keyword/length/TLD.</div></div>
+      <div class="field"><div class="field-label">Link</div><div class="field-value"><a href="https://namebio.com" target="_blank">namebio.com</a></div></div>
+      <div class="field"><div class="field-label">Later</div><div class="field-value">Once revenue allows, an Estibot or DataForSEO comparable-sales feed replaces this manual step — not needed for v1.</div></div>
+    </div>
+  </div>
+
+</section>
+
+<section>
+  <h2 class="section-head">Recommended build order</h2>
+  <p class="section-sub">Sequenced by dependency and by which modules unlock the most scoring accuracy earliest.</p>
+  <ol class="order-list">
+    <li><strong>WHOIS/RDAP (01) + caching (14)</strong><span>Every other module depends on knowing registration status first, and caching should exist before you start hammering free-tier quotas.</span></li>
+    <li><strong>Length (03), word-count (04), pronounceability (05), segmenter (06)</strong><span>Pure local code and libraries — build these together since they share the same string-analysis input.</span></li>
+    <li><strong>TLD table (02) + cross-TLD checks (01/10)</strong><span>Static table plus the RDAP variant sweep — cheap to add once RDAP is working.</span></li>
+    <li><strong>Keyword popularity (07)</strong><span>pytrends integration — the first external signal that meaningfully separates real from junk domains.</span></li>
+    <li><strong>Search-results checker (09)</strong><span>Sign up for Google CSE + Brave now, since quota approval/setup takes a few minutes and is worth doing early.</span></li>
+    <li><strong>Trademark check (11)</strong><span>Free, no key, high value for risk-flagging — slot in right after search-results.</span></li>
+    <li><strong>CPC/commercial-intent (08) + backlink/history (12)</strong><span>The two manual/signup-gated modules — build last since they're the most fragile (rate limits, manual browsing) and least urgent for a first working demo.</span></li>
+    <li><strong>Confidence flag (13) + pricing module (15)</strong><span>Wrap everything with completeness scoring and the comparable-sales anchor once all data sources are live.</span></li>
+  </ol>
+</section>
+
+<div class="footnote">
+  <p><strong>On the $2/month ceiling:</strong> nothing in this build requires payment. The two "manual lookup" modules (08 and 15) are the honest trade-off for staying free — they trade a clean API for agent-driven browsing. Both have a straightforward upgrade path (Google Ads API / DataForSEO for #8, Estibot / DataForSEO for #15) whenever the tool starts generating revenue.</p>
+  <p><strong>On rate limits:</strong> pytrends (07) and the free search tiers (09) are the two most likely to throttle under real usage. The caching layer (14) exists specifically to keep repeat segment lookups ("top," "shop," "get") from burning quota on every single domain check.</p>
+</div>
+
+</div>
+</body>
+</html>
