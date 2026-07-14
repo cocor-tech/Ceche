@@ -10,6 +10,8 @@ from ceche.domain.modules.base import BaseModule
 from ceche.domain.modules.m01_rdap import M1RDAP
 from ceche.domain.modules.m02_tld_table import M2TLDTable
 from ceche.domain.modules.m03_length import M3Length
+from ceche.domain.modules.m04_word_count import M4WordCount
+from ceche.domain.modules.m05_pronounceability import M5Pronounceability
 from ceche.domain.ports import CachePort, ConfigPort, RDAPPort
 
 __all__ = [
@@ -21,6 +23,8 @@ __all__ = [
     "ExternalServiceError",
     "M2TLDTable",
     "M3Length",
+    "M4WordCount",
+    "M5Pronounceability",
     "ModuleResult",
     "ModuleStatus",
     "PortNotConfiguredError",
