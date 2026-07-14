@@ -21,6 +21,12 @@ class ConfigPort(ABC):
         ...
 
 
+class KeywordPopularityPort(ABC):
+    @abstractmethod
+    async def get_popularity(self, term: str) -> float:
+        ...
+
+
 class CachePort(ABC):
     @abstractmethod
     async def get(self, key: str) -> dict[str, Any] | None:
