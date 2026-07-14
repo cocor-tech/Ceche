@@ -167,7 +167,7 @@ class AppraisalEngine:
             estimated_value=float(estimated) if estimated else None,
             range_low=float(range_low) if range_low else None,
             range_high=float(range_high) if range_high else None,
-            confidence=r15.data.get("label") if r15 and r15.data else None,
+            confidence=r13.data.get("label") if r13 and r13.data else None,
             completeness_ratio=ctx.get("completeness_ratio"),
             tld_score=_get(ctx, "result_m2_tld_table", "tld_score"),
             weight_profile=ctx.get("weight_profile"),

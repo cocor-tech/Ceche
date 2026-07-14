@@ -43,7 +43,7 @@ def _build_engine(cfg: Config) -> AppraisalEngine:
     )
 
 
-@app.command()
+@app.command(name="appraise")  # noqa: B008
 def appraise_cmd(
     domains: list[str] = typer.Argument(..., help="Domain(s) to appraise or path to file"),
     fresh: bool = typer.Option(False, "--fresh", "-f", help="Bypass cache"),
@@ -57,7 +57,7 @@ def appraise_cmd(
 
     engine = _build_engine(cfg)
 
-    all_domains = _resolve_domains(domains)
+    all_domains = [d for d in _resolve_domains(domains) if "." in d]
     if not all_domains:
         console.print("[red]No domains provided.[/red]")
         raise typer.Exit(code=1)
