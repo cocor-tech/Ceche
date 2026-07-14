@@ -21,6 +21,7 @@ from ceche.domain.modules.m13_confidence import M13Confidence
 from ceche.domain.modules.m15_pricing import M15Pricing
 from ceche.domain.modules.m16_brandability import M16Brandability
 from ceche.domain.ports import (
+    AIPort,
     CachePort,
     KeywordPopularityPort,
     RDAPPort,
@@ -53,13 +54,14 @@ class AppraisalEngine:
         wayback: WaybackAdapter | None = None,
         ahrefs: AhrefsDRAdapter | None = None,
         opr: OPRAdapter | None = None,
+        ai: AIPort | None = None,
     ) -> None:
         self._m1 = M1RDAP(rdap, cache)
         self._m2 = M2TLDTable()
         self._m3 = M3Length()
         self._m4 = M4WordCount()
         self._m5 = M5Pronounceability()
-        self._m6 = M6Segmenter()
+        self._m6 = M6Segmenter(ai)
         self._m7 = M7KeywordPopularity(keyword) if keyword else None
         self._m8 = M8CPC()
         self._m9 = M9SearchResults(search, search_backup) if search else None

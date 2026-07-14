@@ -65,11 +65,10 @@ def appraise_cmd(
     cfg = Config.load()
     if fresh:
         cfg.fresh = True
-        import os
-        try:
-            os.remove(cfg.cache_path)
-        except FileNotFoundError:
-            pass
+        import contextlib
+        from pathlib import Path as _Path
+        with contextlib.suppress(FileNotFoundError):
+            _Path(cfg.cache_path).unlink()
 
     engine = _build_engine(cfg)
 

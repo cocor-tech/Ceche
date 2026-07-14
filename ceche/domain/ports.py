@@ -41,6 +41,12 @@ class TrademarkPort(ABC):
         ...
 
 
+class AIPort(ABC):
+    @abstractmethod
+    async def complete(self, prompt: str) -> str:
+        ...
+
+
 class CachePort(ABC):
     @abstractmethod
     async def get(self, key: str) -> dict[str, Any] | None:

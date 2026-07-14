@@ -7,6 +7,7 @@ from wordfreq import word_frequency
 
 from ceche.domain.models import ModuleResult, ModuleStatus
 from ceche.domain.modules.base import BaseModule
+from ceche.domain.ports import AIPort
 
 _MIN_FREQ = 1e-5
 _MIN_WORD_LEN = 2
@@ -17,14 +18,19 @@ _SINGLE_CHAR_WORDS = frozenset({"a", "i"})
 class M6Segmenter(BaseModule):
     name = "m6_segmenter"
 
+    def __init__(self, ai: AIPort | None = None) -> None:
+        self._ai = ai
+
     async def run(self, context: dict[str, Any]) -> ModuleResult:
         sld: str | None = context.get("sld")
         if not sld:
             return ModuleResult.error(self.name, "no sld in context")
 
         sld_lower = sld.lower()
-
         words = _segment(sld_lower)
+
+        if words and len(words) >= 4 and self._ai:
+            words = await self._ai_disambiguate(sld_lower, words)
 
         if words is None:
             return ModuleResult(
@@ -55,6 +61,33 @@ class M6Segmenter(BaseModule):
             },
             status=ModuleStatus.SUCCESS,
         )
+
+    async def _ai_disambiguate(self, sld: str, dp_words: list[str]) -> list[str] | None:
+        if not self._ai:
+            return dp_words
+        joined = "+".join(dp_words)
+        prompt = (
+            f"Is '{sld}' better treated as a single brandable word or split into '{joined}'?\n"
+            f"Reply SINGLE if it should stay whole.\n"
+            f"Reply SPLIT: followed by the correct split words separated by + if it's real words.\n"
+            f"Example: 'topinsurance' → SPLIT:top+insurance\n"
+            f"Example: 'gojominitia' → SINGLE\n"
+            f"Only reply with SINGLE or SPLIT:word1+word2."
+        )
+        try:
+            result = await self._ai.complete(prompt)
+            if not result:
+                return dp_words
+            result = result.strip().upper()
+            if result.startswith("SINGLE"):
+                return None
+            if result.startswith("SPLIT:"):
+                parts = result[6:].strip().lower().split("+")
+                if all(len(p) >= 2 for p in parts):
+                    return parts
+        except Exception:
+            pass
+        return dp_words
 
 
 def _segment(s: str) -> list[str] | None:
