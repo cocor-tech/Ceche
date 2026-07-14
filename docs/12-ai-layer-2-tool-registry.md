@@ -196,3 +196,46 @@ ceche/infrastructure/ai/
 
 - None beyond existing Python stdlib + domain module imports
 - OpenAI function schema generation is handled internally (no external dep)
+
+## Best Practices
+
+### Tool Design
+- Each tool should have a single, focused responsibility. If a tool does two things (e.g., "check registration AND get age"), split it into two tools.
+- Tool names must use snake_case and be self-documenting: `domain_registered`, not `chkreg` or `check_domain_registration_status`.
+- Every tool description must include what it RETURNS, not just what it does. "Returns True if the domain is currently registered, False otherwise" is better than "Checks domain registration."
+- Set `cacheable=True` for any tool whose result doesn't change within a single appraisal session. This prevents the AI from calling the same tool twice.
+
+### Parameter Validation
+- Never trust AI-generated parameters. Validate every field before execution — type check (str vs int vs float), range check (scores must be 0-100), and allowlist check (tld must be in IANA list).
+- Reject parameters that contain shell metacharacters, SQL injection patterns, or path traversal sequences (`../`, `/etc/`).
+- Return descriptive validation errors: `{"error": "param 'score' must be 0-100, got 150"}` not `{"error": "invalid"}`.
+
+### Execution Sandbox
+- All tool execution runs in a separate asyncio task with a 5-second timeout. Tools that don't complete within 5 seconds are killed and return a timeout error.
+- Tools must be pure functions — no filesystem access, no network calls unless explicitly part of their contract (like `ahrefs_dr` which makes an HTTP call).
+- After execution, validate that the return value matches the declared `ToolReturn` type before passing it back to the AI.
+
+## Common Mistakes & How to Avoid Them
+
+| Mistake | Why It Happens | Prevention |
+|---|---|---|
+| **Tool returns None silently** | Function returns None when data is missing, no error raised | Wrap every tool in `_safe_execute()` that converts None to a typed error response |
+| **AI calls same tool repeatedly** | Agent gets stuck in a reasoning loop | Implement per-call deduplication: if same tool+params called within single reasoning chain, return cached result |
+| **Sensitive data leaked to AI** | Tool returns raw API responses with API keys embedded | Strip `Authorization` headers and any key-like fields from tool results before returning to AI |
+| **Tool modifies global state** | Tool has side effects (writes to DB, modifies context dict) | Mark tools as read-only by default. Write tools must be explicitly annotated and logged. |
+| **Tool description doesn't match behavior** | Code changed but description wasn't updated | Add integration test that: calls tool → checks return type matches ToolReturn declaration |
+| **AI calls wrong tool with right intent** | Tool names are too similar (`get_score` vs `get_scores`) | Name tools distinctly. Use the module prefix: `m6_word_break`, `m12_ahrefs_dr` |
+
+## Enterprise-Grade Implementation Checklist
+
+- [ ] Every tool has a `ToolDefinition` with typed params and return type
+- [ ] Param validation rejects: shell metacharacters, SQL injection, path traversal
+- [ ] 5-second execution timeout per tool call
+- [ ] Deduplication: same tool+params not called twice in one reasoning chain
+- [ ] Sensitive data stripped from tool results before returning to AI
+- [ ] Integration test: every tool returns correct ToolReturn type
+- [ ] Integration test: None return value triggers error, not silent failure
+- [ ] Integration test: invalid params rejected with descriptive error
+- [ ] Tools annotated as read-only by default; write tools explicitly marked
+- [ ] Tool descriptions include return type in plain English
+- [ ] All 16 tools have at least one unit test

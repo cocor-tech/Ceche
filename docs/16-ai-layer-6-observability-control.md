@@ -293,3 +293,60 @@ ceche/infrastructure/ai/
 │   ├── health.py          # Health endpoint response builder
 │   └── otel.py            # OpenTelemetry tracer setup
 ```
+
+## Best Practices
+
+### Audit Logging
+- Log EVERY AI interaction, including failed calls and timeouts. A call that timed out tells you the provider is unhealthy — this is as valuable as a successful call.
+- Include the first 200 characters of the prompt and response in the audit log. Truncate longer content. This gives enough context for debugging without blowing up storage.
+- Use structured JSON for the `detail` fields, not free-text strings. Every log entry should be queryable by: domain, module, prompt_id, provider, success, cost_range.
+- Ship audit logs off-instance within 60 seconds. If the app crashes, you still have the logs. Use a sidecar process or a background thread that tails the SQLite WAL file.
+
+### Circuit Breaker Tuning
+- Set the failure threshold based on your call volume. Low volume (≤10 calls/min): threshold=3 failures. High volume (>100 calls/min): threshold=10 failures. The goal is to trip within 1 minute of a provider outage.
+- When the circuit opens, switch to the next available provider, not to NoOp. Only fall to NoOp if all providers are unhealthy.
+- Log every state transition (CLOSED→OPEN, OPEN→HALF_OPEN, HALF_OPEN→CLOSED, HALF_OPEN→OPEN) at WARNING level. These are operations-critical events.
+- In HALF_OPEN state, only allow 1 request through. If it succeeds, close the circuit. If it fails, reopen immediately. Don't flood a recovering provider.
+
+### Cost Management
+- Implement provider-specific cost calculation from the `usage` response object, not from hardcoded estimates. Different models have different pricing, and prices change.
+- Track cost per module, not just total cost. This reveals which modules are the most expensive to run AI on — enabling targeted optimization.
+- Set a soft cap at 80% of daily budget that triggers a `WARNING` log but doesn't stop processing. Set a hard cap at 100% that stops all AI calls for the day.
+- Include cost in the appraisal result metadata so users can see how much AI cost to produce their valuation.
+
+### Alerting
+- CRITICAL alerts (circuit breaker open, all providers down) should go to PagerDuty/OpsGenie.
+- WARNING alerts (budget 80% consumed, latency P95 > 5s) should go to Slack/Teams.
+- INFO alerts (provider switched, daily cost summary) should go to a dashboard only.
+
+## Common Mistakes & How to Avoid Them
+
+| Mistake | Why It Happens | Prevention |
+|---|---|---|
+| **Circuit breaker never recovers** | Provider comes back but HALF_OPEN test request fails on a slow endpoint | Use a lightweight health check endpoint for HALF_OPEN tests, not a full prompt+response call |
+| **Cost tracking misses async calls** | `cost_tracker.track()` called before the async call completes, not after | Track cost in the finally block: `try: result = await ai_call(); finally: cost_tracker.track(cost)` |
+| **Audit table locks under concurrent writes** | SQLite single-writer limitation | Use WAL mode (PRAGMA journal_mode=WAL). If concurrent writes exceed 100/min, migrate to PostgreSQL. |
+| **Alerts fire for expected behavior** | Circuit breaker opens because provider does weekly maintenance | Add a maintenance window config that suppresses alerts during known downtime |
+| **Latency monitoring averages hide P99 problems** | Averaging smooths out spikes | Always report P50, P95, P99, and max. Never report average alone. |
+| **Daily budget resets at wrong time** | Budget reset uses server local time instead of UTC | Always use UTC for budget resets. Store `reset_at_utc` in the tracker. |
+
+## Enterprise-Grade Implementation Checklist
+
+- [ ] Every AI interaction logged (success AND failure), shipped off-instance within 60 seconds
+- [ ] First 200 chars of prompt/response included in audit, rest truncated
+- [ ] Structured JSON detail fields, queryable by domain/module/prompt/provider/success
+- [ ] Circuit breaker: threshold tuned to call volume, state transitions logged at WARNING
+- [ ] Circuit breaker: HALF_OPEN uses lightweight health check, only 1 test request
+- [ ] Circuit breaker: falls back to next provider before falling to NoOp
+- [ ] Cost calculated from actual usage response, not hardcoded estimates
+- [ ] Cost tracked per module AND per domain
+- [ ] Soft cap (80% budget) logs WARNING; hard cap (100%) stops all AI
+- [ ] Cost included in appraisal result metadata
+- [ ] CRITICAL alerts → PagerDuty; WARNING → Slack; INFO → dashboard
+- [ ] Maintenance window config to suppress expected downtime alerts
+- [ ] SQLite WAL mode enabled; migration path to PostgreSQL documented
+- [ ] P50/P95/P99/max latency reported; never average alone
+- [ ] Budget resets use UTC exclusively
+- [ ] Integration test: circuit breaker opens after N failures
+- [ ] Integration test: cost hard cap stops AI calls
+- [ ] Integration test: audit log survives process crash (WAL recovery)

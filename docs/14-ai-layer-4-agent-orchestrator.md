@@ -242,3 +242,45 @@ ceche/infrastructure/ai/
 │   ├── budget.py           # CostController
 │   └── pipeline.py         # Pipeline hook into AppraisalEngine
 ```
+
+## Best Practices
+
+### Pipeline Integration
+- The orchestrator must run AFTER all deterministic modules in a phase complete, not interleaved. This prevents race conditions where an AI-refined M6 result reaches M7 before the deterministic M7 has run.
+- Never block the main appraisal loop on AI. Use `asyncio.wait_for(ai_call, timeout=10.0)` so a slow AI provider doesn't stall the entire pipeline.
+- When AI is disabled (NoOp adapter), the orchestrator should short-circuit immediately and pass through all deterministic results with zero overhead. Add a single `if not self._ai_enabled: return` check at the entry point.
+
+### Blending Strategy
+- Never let AI fully override a high-confidence deterministic result. The blend weight `w` should be capped at 0.5 when original confidence >= 0.9. The formula: `w = min(0.5, 1.0 - original_confidence)`.
+- When AI and deterministic results disagree by more than 2 standard deviations (relative to the module's normal output range), flag the result for human review rather than blindly blending. Add a `review_flagged: true` field to the blended result.
+- For categorical outputs (M6 SINGLE vs SPLIT, M11 RISK level), blending doesn't apply. AI either confirms or overrides. If it overrides, the original is preserved in `data.original_severity` for audit.
+
+### Cost Control
+- Enforce the per-domain budget BEFORE making any AI calls. Compute the estimated cost of all triggered rules first, then decide which to run within budget.
+- Rank rules by expected value: M6 (prevents bad segmentation) > M8 (adds CPC coverage) > M11 (trademark risk) > M16 (brandability polish) > M5 (pronounceability nuance) > M7 (keyword replacement). Skip low-rank rules when budget is tight.
+- Track actual cost vs estimated cost. If actual regularly exceeds estimate by >50%, recalibrate the token estimates.
+
+## Common Mistakes & How to Avoid Them
+
+| Mistake | Why It Happens | Prevention |
+|---|---|---|
+| **AI call blocks the pipeline** | No timeout set, provider hangs | `asyncio.wait_for(..., timeout=10.0)` on every AI call |
+| **Deterministic result replaced by bad AI output** | AI confidence was low but blend weight was high | Cap blend weight at 0.5 for high-confidence deterministic results |
+| **Cost explodes on a single domain** | Per-domain budget not enforced | Check budget BEFORE calling AI, not after |
+| **Rules fire when they shouldn't** | Trigger condition is too broad | Every rule must have a specific lambda trigger. Test triggers against known-good cases. |
+| **Orchestrator calls AI for every module even when not needed** | All rules enabled by default | Default all rules to disabled. Enable only those proven to add value. |
+| **AI results from a previous appraisal leak into the next one** | Shared mutable state | Reset the AI context dict between appraisals |
+
+## Enterprise-Grade Implementation Checklist
+
+- [ ] AI calls have 10-second timeout, non-blocking via asyncio.wait_for
+- [ ] Short-circuit when AI disabled (NoOp adapter) — zero overhead
+- [ ] Blend weight capped at 0.5 when deterministic confidence >= 0.9
+- [ ] Per-domain budget enforced BEFORE any AI call
+- [ ] Rules ranked by expected value; low-rank skipped when budget tight
+- [ ] All rules default to disabled; individually enableable via config
+- [ ] Categorical outputs (SINGLE/SPLIT, RISK tier) record original in data for audit
+- [ ] Integration test: slow AI provider doesn't stall pipeline (returns deterministic result after timeout)
+- [ ] Integration test: AI disabled produces identical output to running without AI layer
+- [ ] Integration test: cost budget exhausted mid-domain → remaining rules skipped, prior results kept
+- [ ] Integration test: AI context reset between appraisals (no cross-contamination)

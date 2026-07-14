@@ -348,3 +348,48 @@ ceche/infrastructure/ai/prompts/
 ├── m16_brandability.py
 └── catalog.py           # Registry of all prompts by trigger condition
 ```
+
+## Best Practices
+
+### Prompt Design
+- Every prompt must have a `version` field. When a prompt is updated, increment the version. The audit log records which version was used for each AI call, so you can correlate version changes with accuracy changes.
+- Include 3–5 few-shot examples per prompt. Examples must cover: (a) the most common case, (b) an edge case the system commonly gets wrong, and (c) a borderline case where the correct answer is ambiguous.
+- Keep prompts under 500 tokens for the user message. If you exceed this, the prompt is too complex or you're including too much context. Split it into tool calls.
+- Always include an explicit output format directive at the end: "Respond ONLY with: FORMAT:value". Never rely on the AI to infer the output format from examples alone.
+
+### Output Parsing
+- The response parser must be defensive. If the AI returns a malformed response (wrong format, extra text, missing fields), extract what you can and return `confidence: 0.0` for any field that couldn't be parsed.
+- Implement a retry mechanism: if parsing fails, send the same prompt with "[Previous response was unparseable. Respond ONLY with: FORMAT]" appended. Retry once.
+- For categorical outputs (TIER, RISK, LABEL), validate against an allowlist after parsing. "TIER:super_elite" should be rejected even if it parses cleanly — the tier doesn't exist.
+
+### Few-Shot Example Standards
+- Examples must use real domain names and real words. Synthetic examples ("abc", "xyz", "test123") train the model on noise.
+- Rotate examples quarterly. The domain market changes — crypto terms that were elite CPC in 2021 are informational in 2026.
+- Each example must include a brief "why" in a comment: "// SCORE:95 — common word with high search intent." This helps prompt maintainers understand the reasoning.
+
+## Common Mistakes & How to Avoid Them
+
+| Mistake | Why It Happens | Prevention |
+|---|---|---|
+| **AI returns extra text with the structured output** | Model ignores "Respond ONLY with" directive | Use aggressive post-processing: `re.search(r'SCORE:\s*(\d+)', response)`, ignore everything else |
+| **Few-shot examples contradict each other** | Multiple contributors add examples without coordination | Code review all prompt changes. Run a consistency check: for the same input, do all examples produce the same expected output format? |
+| **Prompt leaks into training data** | Using a public model that trains on API calls (rare but possible) | This is acceptable — prompts contain no proprietary data, only publicly known domain appraisal logic |
+| **Temperature too high for classification** | Using temperature=0.7 for M8 CPC classification | Classification prompts (M8, M11) should use temperature=0.0–0.1. Creative prompts (M16 brandability) can use 0.3–0.5. |
+| **Prompt tries to do too much** | "Please classify CPC tier, estimate search volume, and check for trademark conflict" | One prompt = one decision. Chain multiple AI calls through the orchestrator, don't cram them into one prompt. |
+| **Parser regex too strict** | Regex expects exact spacing: `SCORE: 95` but AI returns `SCORE:95` | Use flexible patterns: `SCORE\s*:\s*(\d+)` with whitespace tolerance |
+
+## Enterprise-Grade Implementation Checklist
+
+- [ ] Every prompt has a version field (semver)
+- [ ] 3–5 few-shot examples per prompt, using real domain names
+- [ ] Output format directive on every prompt: "Respond ONLY with: FORMAT"
+- [ ] Response parser handles: missing fields, extra text, wrong format, out-of-range values
+- [ ] Allowlist validation for categorical outputs (TIER, RISK, LABEL)
+- [ ] Single retry on parse failure with format reminder
+- [ ] Classification prompts use temperature ≤ 0.1
+- [ ] Examples rotated quarterly
+- [ ] Prompt code review required for changes
+- [ ] Consistency check: same input → same format across all examples
+- [ ] Integration test: every prompt can be parsed by its designated parser
+- [ ] Integration test: malformed response produces confidence=0.0, not crash
+- [ ] Prompt catalog has a `dump` command: `ceche ai prompts dump → prompts.json`

@@ -173,3 +173,50 @@ ceche/infrastructure/ai/
 - `PyJWT` (JWT signing/verification)
 - `sqlite3` (built into Python)
 - No external key management service required
+
+## Best Practices
+
+### Key Storage
+- Never store the vault master key in the same filesystem as the encrypted data. Use a separate secret manager (Vault, AWS Secrets Manager, or env-only on ephemeral containers).
+- Rotate the Fernet key every 90 days. Automate with a cron job or CI pipeline.
+- Store the vault SQLite file in a directory with restricted permissions (chmod 600 on the file, chmod 700 on the directory).
+
+### Agent-to-Agent JWT Exchange
+- Sign JWTs with RS256 (asymmetric) not HS256 (symmetric). This means the signing agent holds a private key and Ceche holds only the public key — the signing key is never shared.
+- Include a `jti` (JWT ID) claim in every JWT to prevent replay attacks. Track used JTIs in the grants table for 7 days.
+- Set TTL conservatively — default 1 hour, max 24 hours. Longer grants should require explicit approval.
+- Never log the raw JWT. Log only the JWT hash (SHA-256) and the decoded claims (without the key material).
+
+### Audit Log
+- Ship audit logs to a centralized system (ELK, Datadog, Splunk) within 1 minute of writing. Use a background thread that tails the SQLite WAL.
+- Implement log rotation: archive audit records older than 90 days to cold storage, delete after 1 year.
+- Set up alerts for: 3+ consecutive access_denied events within 5 minutes, any grant_use with revoked=true, any key_store from an unrecognized agent_id.
+
+## Common Mistakes & How to Avoid Them
+
+| Mistake | Why It Happens | Prevention |
+|---|---|---|
+| **Committing the vault key to git** | Developer adds .env to repo or hardcodes key in config | Add `CECHE_VAULT_KEY` to `.gitignore`, use pre-commit hook to scan for hex strings > 32 chars |
+| **Using the same Fernet key across environments** | Copying the vault.db between dev/staging/prod | Generate a unique master key per environment. Use `CECHE_VAULT_KEY` env var, never persist it. |
+| **Grant TTL too long** | Setting TTL to 365 days "for convenience" | Enforce max TTL of 24 hours in the GrantManager. Longer access requires a new grant. |
+| **JWT signed with HS256 and a weak secret** | Using "secret" or "password" as the signing key | Require RS256 minimum. Validate key length (≥ 2048 bits for RSA) at grant creation time. |
+| **Not revoking grants when an agent session ends** | Agent disconnects without cleanup | Grants auto-expire via TTL. Additionally, implement a `/ai/revoke-session` endpoint that the agent calls on disconnect. |
+| **Audit table growing unbounded** | No cleanup policy | Add a daily cron that deletes audit records older than the retention period. |
+
+## Enterprise-Grade Implementation Checklist
+
+- [ ] Fernet encryption with PBKDF2 key derivation (≥ 600,000 iterations)
+- [ ] RS256 JWT signing (RSA 2048-bit minimum)
+- [ ] JWT jti claim for replay protection
+- [ ] All database files chmod 600, parent directory chmod 700
+- [ ] Audit logs shipped to centralized system within 60 seconds
+- [ ] Alert on: 3+ denied accesses in 5 min, revoked grant usage, unknown agent_id
+- [ ] Max grant TTL enforced at 24 hours
+- [ ] Grant auto-revocation on agent disconnect
+- [ ] Daily audit log rotation and archival
+- [ ] Pre-commit hook scanning for hardcoded secrets
+- [ ] Master key never stored on same filesystem as encrypted data
+- [ ] Quarterly Fernet key rotation
+- [ ] Integration test: JWT replay attack is rejected
+- [ ] Integration test: expired grant returns 401
+- [ ] Integration test: revoked key cannot be used

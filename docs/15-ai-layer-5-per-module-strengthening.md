@@ -208,3 +208,47 @@ ceche/domain/modules/
 ├── m15_pricing.py            # +_ai_refine method
 ├── m16_brandability.py       # +_ai_refine method
 ```
+
+## Best Practices
+
+### Module Refinement Design
+- Every `_ai_refine()` method must follow the same pattern: (1) check if AI is enabled, (2) prepare context, (3) call AI, (4) parse response, (5) blend with original, (6) log to audit. Use a decorator `@ai_refinement(module="m6")` that enforces this pattern.
+- The deterministic output must ALWAYS be preserved in the result data under a `deterministic_*` key before blending. This enables debugging: when a valuation seems wrong, you can trace whether AI or deterministic logic caused it.
+- Never let AI override a module's status from SUCCESS to ERROR or vice versa. AI can only modify the `value` and `confidence` fields, not the `status`.
+
+### Trigger Accuracy
+- Before enabling a trigger in production, run it against 100+ historical appraisals and measure: (a) what % of appraisals trigger it, (b) what % of triggered cases the AI changes the result, (c) whether those changes improved accuracy. Only enable triggers that show measurable improvement.
+- Triggers must be exclusive — a module should never have two AI refinement paths that both fire. Use `if trigger_a: ... elif trigger_b: ...` not two independent `if` blocks.
+- Add a `trigger_reason` field to the blended result: `"trigger_reason": "word_count=6 >= 4"`. This makes it easy to query audit logs for "why did AI run on this domain?"
+
+### Module-Specific Guidance
+- **M6:** The 4-word threshold is aggressive. Consider lowering to 3 words for .com domains (where short words are more likely to be real) and keeping 4 for other TLDs.
+- **M8:** AI CPC classification should be cached aggressively (7-day TTL) since commercial intent doesn't change rapidly. Different domains using the same word benefit from the same AI classification.
+- **M11:** The AI trademark risk assessment is advisory only. Never let AI override a confirmed exact match from the USPTO adapter. AI supplements the known-marks list; it does not replace confirmed data.
+- **M16:** Brandability AI calls should be batched. If appraising 50 domains in one run and 15 are brandable, batch them into a single AI call rather than 15 separate calls. This saves cost and latency.
+
+## Common Mistakes & How to Avoid Them
+
+| Mistake | Why It Happens | Prevention |
+|---|---|---|
+| **AI refinement runs on a module that worked perfectly** | Trigger is too broad ("always" instead of conditional) | Every trigger must check `original.confidence < threshold` before firing |
+| **AI result overwrites deterministic data fields** | Blending replaces the entire data dict | Blend only the `value` field. Preserve original `data.*` fields. Add `ai_value` and `ai_confidence` as separate keys. |
+| **Same AI call made twice for the same domain** | M8 runs on each word independently, both trigger AI | Before calling AI, check if this word was already classified in this session (in-memory cache per appraisal) |
+| **Module ignores AI result when it was clearly better** | Blend weight hardcoded to 0.3 regardless of confidence | Use dynamic blending: if AI confidence > original confidence, give AI more weight. If AI confidence < 0.4, ignore AI completely. |
+| **AI refinement introduces latency that users notice** | All refinements run sequentially | Refinements for independent modules (M7, M8, M11) should run in parallel via asyncio.gather |
+
+## Enterprise-Grade Implementation Checklist
+
+- [ ] `@ai_refinement` decorator enforcing the 6-step pattern on every `_ai_refine` method
+- [ ] Deterministic output preserved under `deterministic_*` keys before blending
+- [ ] AI never modifies module `status` (SUCCESS/ERROR/SKIPPED)
+- [ ] All triggers validated against 100+ historical appraisals before production enablement
+- [ ] Triggers are exclusive (no double-firing)
+- [ ] `trigger_reason` recorded in result data for auditability
+- [ ] M8 CPC AI: 7-day cache TTL for AI classifications
+- [ ] M11: AI supplements confirmed USPTO marks, never overrides them
+- [ ] M16: batch brandability AI calls when appraising multiple domains
+- [ ] Independent module refinements run in parallel (M7∥M8∥M11)
+- [ ] In-session deduplication: same word not classified twice by AI in one appraisal
+- [ ] Integration test: AI runs on low-confidence output, deterministic on high-confidence
+- [ ] Integration test: AI never changes module status field

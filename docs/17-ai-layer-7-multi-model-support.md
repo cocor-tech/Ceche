@@ -416,3 +416,56 @@ ceche/infrastructure/ai/
 ├── selector.py             # ModelSelector
 └── detection.py            # Auto-detect available providers
 ```
+
+## Best Practices
+
+### Adapter Design
+- Every adapter must implement `health_check()` as a lightweight ping, not a full completion. Use the provider's models list endpoint or a simple GET to the base URL. Health checks must complete in under 2 seconds.
+- Adapters must be stateless beyond their API key reference. Shared state between calls causes subtle bugs when multiple appraisals run concurrently.
+- Never hardcode model names in adapter constructors. Always accept `model: str` as a parameter with a sensible default. This allows A/B testing models without code changes.
+
+### Provider Selection
+- The ModelSelector should prefer the cheapest capable adapter for classification tasks (M5, M7, M8, M11) and the highest-quality adapter for creative/reasoning tasks (M6, M15, M16). Use different selection rules per module.
+- Implement a "degradation timeout" — if the primary provider has been unhealthy for >30 seconds, stop health-checking it for 60 seconds to avoid thundering-herd health checks.
+- When switching providers mid-appraisal, log the switch with the reason (timeout, error, cost). This is critical for debugging inconsistent valuations.
+
+### Ollama-Specific
+- Ollama is excellent for cost-sensitive deployments but has no SLA. Use it as a fallback, not a primary.
+- Set the Ollama timeout higher (30s vs 10s) — local models run on CPU and are slower.
+- Monitor Ollama's RAM usage. If the model gets swapped to disk, latency can spike from 500ms to 30 seconds. Implement a RAM watchdog.
+- For tool-dependent prompts (M6 disambiguation), always check if the Ollama model supports function calling. Most open-source models don't. Fall back to text-based tool descriptions in the prompt body.
+
+### Security
+- Never log API keys. The adapter's `__repr__` and `__str__` methods must redact the key. Audit log must never contain the key.
+- When passing API keys to HTTP headers, use `Authorization: Bearer {key}` (OpenAI) or `x-api-key: {key}` (Anthropic). Never pass keys in URL query parameters.
+- For Ollama on localhost, bind to `127.0.0.1` only, never `0.0.0.0`. No auth needed, but restrict network access.
+
+## Common Mistakes & How to Avoid Them
+
+| Mistake | Why It Happens | Prevention |
+|---|---|---|
+| **Using the wrong model for the task** | "gpt-4o is always better" — but it's 10x the cost of gpt-4o-mini for classification | Route classification tasks to mini models, reasoning tasks to full models |
+| **Hardcoding model name** | `OpenAIAdapter(key, "gpt-4o")` in code | Always accept model as config parameter. Upgrade path: change config, reboot — no code change. |
+| **Health check is too heavy** | Health check runs a full completion with 500 tokens | Health check should be a GET to `/v1/models` or a HEAD request to the base URL |
+| **Not handling provider-specific error codes** | 429 (rate limit) treated the same as 500 (server error) | 429 → back off and retry. 500 → circuit breaker. 401 → disable provider (bad key). 403 → disable provider (access denied). |
+| **Ollama model not pulled before first use** | First call triggers a download that takes minutes | At startup, check if model exists: `GET /api/tags`. If not, log WARNING and exclude from available adapters. |
+| **Context window exceeded** | Prompt + tool results + response > model's context limit | Track cumulative token count during reasoning chains. If approaching limit, summarize tool results instead of passing raw data. |
+
+## Enterprise-Grade Implementation Checklist
+
+- [ ] Every adapter has a lightweight health_check() that completes in under 2s
+- [ ] Adapters are stateless — no shared mutable state between calls
+- [ ] Model names configurable via config, not hardcoded
+- [ ] ModelSelector routes classification to mini models, reasoning to full models
+- [ ] Degradation timeout: stop health-checking unhealthy provider for 60 seconds
+- [ ] Provider switches logged with reason (timeout, error, cost)
+- [ ] Ollama: timeout 30s, bind to 127.0.0.1 only, no auth required
+- [ ] Ollama: model existence checked at startup, not first call
+- [ ] API keys never logged — __repr__ and __str__ redacted
+- [ ] Keys never in URL query params — always in Authorization headers
+- [ ] 429 → backoff+retry; 500 → circuit breaker; 401/403 → disable provider
+- [ ] Context window tracking: summarize tool results if approaching limit
+- [ ] Integration test: each adapter's health_check returns correct status
+- [ ] Integration test: Ollama adapter falls back to text-based tools
+- [ ] Integration test: provider switch happens automatically on primary failure
+- [ ] Integration test: bad API key disables provider without crashing app
