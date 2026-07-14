@@ -16,6 +16,7 @@ from ceche.domain.modules.m06_segmenter import M6Segmenter
 from ceche.domain.modules.m07_keyword_popularity import M7KeywordPopularity
 from ceche.domain.modules.m08_cpc import M8CPC
 from ceche.domain.modules.m09_search_results import M9SearchResults
+from ceche.domain.modules.m10_cross_tld import M10CrossTLD
 from ceche.domain.ports import CachePort, ConfigPort, KeywordPopularityPort, RDAPPort, SearchPort
 
 __all__ = [
@@ -34,6 +35,7 @@ __all__ = [
     "M6Segmenter",
     "M7KeywordPopularity",
     "M9SearchResults",
+    "M10CrossTLD",
     "ModuleResult",
     "ModuleStatus",
     "PortNotConfiguredError",
