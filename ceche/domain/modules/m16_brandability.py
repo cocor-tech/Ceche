@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from ceche.domain.models import ModuleResult, ModuleStatus
+from ceche.domain.modules.ai_refine import ai_refine_module
 from ceche.domain.modules.base import BaseModule
+from ceche.domain.ports import AIPort
 
 _VOWELS = frozenset("aeiou")
 
@@ -32,6 +34,9 @@ _IDEAL_MAX_LEN = 7
 
 class M16Brandability(BaseModule):
     name = "m16_brandability"
+
+    def __init__(self, ai: AIPort | None = None) -> None:
+        self._ai = ai
 
     async def run(self, context: dict[str, Any]) -> ModuleResult:
         sld: str | None = context.get("sld")
@@ -63,6 +68,23 @@ class M16Brandability(BaseModule):
         if not has_vowel:
             score = min(score, 15.0)
         multiplier = _resolve_multiplier(score)
+
+        if self._ai and score < 80:
+            prompt = (
+                f"String: {sld_lower}\n"
+                f"Length: {length}\n"
+                f"Current brandability score: {score:.0f}/100\n\n"
+                f"Rate as a brand name (0-100). "
+                f"Respond ONLY with: SCORE:X"
+            )
+            raw = await ai_refine_module(self._ai, self.name, context, prompt)
+            if raw:
+                import re
+                m = re.search(r"SCORE\s*:\s*(\d+(?:\.\d+)?)", raw, re.IGNORECASE)
+                if m:
+                    ai_score = float(m.group(1))
+                    score = score * 0.4 + ai_score * 0.6
+                    multiplier = _resolve_multiplier(score)
 
         return ModuleResult(
             module_name=self.name,

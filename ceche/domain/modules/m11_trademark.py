@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from ceche.domain.models import ModuleResult, ModuleStatus, TrademarkResult
+from ceche.domain.modules.ai_refine import ai_refine_module
 from ceche.domain.modules.base import BaseModule
-from ceche.domain.ports import TrademarkPort
+from ceche.domain.ports import AIPort, TrademarkPort
 
 _SEVERITY_MULT: dict[str, float] = {
     "none": 1.0,
@@ -16,9 +17,15 @@ _SEVERITY_MULT: dict[str, float] = {
 class M11Trademark(BaseModule):
     name = "m11_trademark"
 
-    def __init__(self, primary: TrademarkPort, backup: TrademarkPort | None = None) -> None:
+    def __init__(
+        self,
+        primary: TrademarkPort,
+        backup: TrademarkPort | None = None,
+        ai: AIPort | None = None,
+    ) -> None:
         self._primary = primary
         self._backup = backup
+        self._ai = ai
 
     async def run(self, context: dict[str, Any]) -> ModuleResult:
         sld: str | None = context.get("sld")
@@ -55,6 +62,25 @@ class M11Trademark(BaseModule):
         if tld == "com" and wc == 1 and had_exact_match:
             worst_severity = "none"
             worst_marks = []
+
+        if worst_severity == "none" and self._ai and isinstance(words, list):
+            for word in words:
+                if len(word) < 3:
+                    continue
+                prompt = (
+                    f"Term: {word}\n"
+                    f"Is this a registered trademark or likely brand? "
+                    f"RISK:EXACT,HIGH,MEDIUM,LOW,NONE\n"
+                    f"Respond ONLY with: RISK:X"
+                )
+                raw = await ai_refine_module(self._ai, self.name, context, prompt)
+                if raw:
+                    import re
+                    m = re.search(r"RISK\s*:\s*(\w+)", raw, re.IGNORECASE)
+                    if m and m.group(1).upper() in ("EXACT", "HIGH"):
+                        worst_severity = m.group(1).lower()
+                        worst_marks = [f"AI-detected: {word}"]
+                        break
 
         multiplier = _SEVERITY_MULT.get(worst_severity, 1.0)
         context["is_canonical_brand"] = had_exact_match

@@ -5,7 +5,9 @@ from pathlib import Path
 from typing import Any
 
 from ceche.domain.models import ModuleResult, ModuleStatus
+from ceche.domain.modules.ai_refine import ai_refine_module
 from ceche.domain.modules.base import BaseModule
+from ceche.domain.ports import AIPort
 
 CPC_FILE = Path(__file__).resolve().parent.parent / "data" / "cpc_keywords.json"
 
@@ -35,8 +37,9 @@ _CPC_MAP: dict[str, str] = _load_cpc()
 class M8CPC(BaseModule):
     name = "m8_cpc"
 
-    def __init__(self) -> None:
+    def __init__(self, ai: AIPort | None = None) -> None:
         self._cpc_map = _CPC_MAP
+        self._ai = ai
 
     async def run(self, context: dict[str, Any]) -> ModuleResult:
         words: Any = context.get("words")
@@ -63,14 +66,21 @@ class M8CPC(BaseModule):
         if match_tier is None or match_word is None:
             tier_label = "none"
             multiplier = 1.0
+            confidence = 0.5
         else:
             tier_label = match_tier
             multiplier = _TIER_MULT.get(match_tier, 1.0)
+            confidence = 1.0
+
+        if tier_label == "none" and self._ai and words:
+            result = await self._ai_refine(words, context)
+            if result is not None:
+                return result
 
         return ModuleResult(
             module_name=self.name,
             value=multiplier,
-            confidence=1.0 if match_tier else 0.5,
+            confidence=confidence,
             data={
                 "tier": tier_label,
                 "match_word": match_word,
@@ -78,6 +88,35 @@ class M8CPC(BaseModule):
             },
             status=ModuleStatus.SUCCESS,
         )
+
+    async def _ai_refine(self, words: list[str], context: dict[str, Any]) -> ModuleResult | None:
+        for word in words:
+            if len(word) < 3:
+                continue
+            prompt = (
+                f"Term: {word}\n"
+                f"Current classification: not in CPC map (default NONE)\n\n"
+                f"What is the commercial intent? "
+                f"TIER:ELITE,HIGH,MEDIUM_HIGH,MEDIUM,LOW,INFORMATIONAL,NONE\n"
+                f"Respond ONLY with: TIER:X"
+            )
+            raw = await ai_refine_module(self._ai, self.name, context, prompt)
+            if not raw:
+                continue
+            import re
+            m = re.search(r"TIER\s*:\s*(\w+)", raw, re.IGNORECASE)
+            if m:
+                tier = m.group(1).lower()
+                mult = _TIER_MULT.get(tier)
+                if mult is not None:
+                    return ModuleResult(
+                        module_name=self.name,
+                        value=mult,
+                        confidence=0.7,
+                        data={"tier": tier, "match_word": word, "multiplier": mult, "source": "ai"},
+                        status=ModuleStatus.SUCCESS,
+                    )
+        return None
 
 
 def _tier_rank(tier: str | None) -> int:
