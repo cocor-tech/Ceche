@@ -18,6 +18,9 @@ dependencies = [
     "typing-extensions>=4.9.0",
 ]
 
+[project.scripts]
+ceche = "ceche.interfaces.cli:app"
+
 [project.optional-dependencies]
 cli = ["typer>=0.12.0", "rich>=13.0.0"]
 web = ["fastapi>=0.110.0", "uvicorn>=0.27.0", "pydantic>=2.5.0"]
@@ -76,6 +79,7 @@ quote-style = "double"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN", "D", "S101", "ARG002"]
+"ceche/interfaces/**" = ["B008"]
 
 [tool.mypy]
 strict = true
