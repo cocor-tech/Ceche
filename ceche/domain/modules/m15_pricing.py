@@ -193,9 +193,12 @@ class M15Pricing(BaseModule):
             mult_key = f"mult_{name}"
             mult: float | None = context.get(mult_key)
             if mult is not None and isinstance(mult, (int, float)) and mult > 0:
-                contribution = (
-                    float(mult) ** weight if mult >= 1.0 else float(mult)
-                )
+                if name == "m12_authority" and mult >= 1.0:
+                    contribution = 1.0 + weight * (float(mult) - 1.0)
+                else:
+                    contribution = (
+                        float(mult) ** weight if mult >= 1.0 else float(mult)
+                    )
                 value *= contribution
                 breakdown[name] = round(contribution, 4)
 

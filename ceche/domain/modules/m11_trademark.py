@@ -51,11 +51,13 @@ class M11Trademark(BaseModule):
 
         tld = context.get("tld", "")
         wc = context.get("word_count")
-        if tld == "com" and wc == 1 and worst_severity == "exact":
+        had_exact_match = worst_severity == "exact"
+        if tld == "com" and wc == 1 and had_exact_match:
             worst_severity = "none"
             worst_marks = []
 
         multiplier = _SEVERITY_MULT.get(worst_severity, 1.0)
+        context["is_canonical_brand"] = had_exact_match
 
         return ModuleResult(
             module_name=self.name,

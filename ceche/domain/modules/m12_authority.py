@@ -66,6 +66,8 @@ class M12Authority(BaseModule):
 
         authority = _dynamic_blend(ahrefs_dr, opr_score, snapshots)
         multiplier = _authority_multiplier(authority, parked)
+        if context.get("is_canonical_brand"):
+            multiplier = min(multiplier, 3.0)
         sources_active = _count_sources(ahrefs_dr, opr_score)
 
         return ModuleResult(
@@ -128,7 +130,7 @@ def _dynamic_blend(
 
     hist = _snapshot_score(snapshots)
     scores.append(hist)
-    weights.append(0.5)
+    weights.append(0.1)
 
     if not scores:
         return None
@@ -169,9 +171,15 @@ def _authority_multiplier(authority: float | None, parked: bool) -> float:
     if authority is None:
         return 1.0
     if authority >= 0.90:
+        return 48.0
+    if authority >= 0.80:
+        return 15.0
+    if authority >= 0.70:
+        return 8.0
+    if authority >= 0.60:
+        return 5.0
+    if authority >= 0.45:
         return 3.0
-    if authority >= 0.50:
-        return 2.0
     if authority >= 0.20:
         return 1.2
     return 1.0

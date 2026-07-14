@@ -54,7 +54,7 @@ class TestDynamicBlend:
     def test_wayback_only(self):
         result = _dynamic_blend(None, None, 500)
         assert result is not None
-        assert result == 0.7  # snapshot_score(500) = 0.7
+        assert abs(result - 0.7) < 1e-9
 
     def test_all_null(self):
         result = _dynamic_blend(None, None, 0)
