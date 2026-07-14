@@ -19,7 +19,7 @@ class RDAPAdapter(RDAPPort):
     async def lookup(self, domain: str) -> dict[str, Any]:
         url = RDAP_BOOTSTRAP_URL.format(domain=domain)
         try:
-            resp = await self._client.get(url, headers={"Accept": "application/rdap+json"})
+            resp = await self._client.get(url, headers={"Accept": "application/rdap+json"}, follow_redirects=True)
         except httpx.TimeoutException:
             raise ExternalServiceError(
                 service="rdap",

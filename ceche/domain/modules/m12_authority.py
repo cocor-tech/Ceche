@@ -61,6 +61,9 @@ class M12Authority(BaseModule):
             except Exception:
                 opr_score = None
 
+        if parked and _has_authority_signals(ahrefs_dr, opr_score):
+            parked = False
+
         authority = _dynamic_blend(ahrefs_dr, opr_score, snapshots)
         multiplier = _authority_multiplier(authority, parked)
         sources_active = _count_sources(ahrefs_dr, opr_score)
@@ -82,6 +85,10 @@ class M12Authority(BaseModule):
             },
             status=ModuleStatus.SUCCESS,
         )
+
+
+def _has_authority_signals(ahrefs: float | None, opr: float | None) -> bool:
+    return bool((ahrefs is not None and ahrefs > 0) or (opr is not None and opr > 0))
 
 
 def _to_int(value: Any) -> int:

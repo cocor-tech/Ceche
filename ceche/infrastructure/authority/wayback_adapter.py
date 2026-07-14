@@ -10,7 +10,7 @@ class WaybackAdapter:
         self._client = client or httpx.AsyncClient(timeout=15.0)
 
     async def get_snapshots(self, domain: str) -> dict[str, Any]:
-        url = f"http://web.archive.org/cdx/search/cdx?url={domain}&output=json&limit=1"
+        url = f"http://web.archive.org/cdx/search/cdx?url={domain}&output=json&limit=100&fl=timestamp"
         try:
             resp = await self._client.get(url)
         except httpx.RequestError:
@@ -25,7 +25,7 @@ class WaybackAdapter:
             return {"count": 0}
 
         count = len(data) - 1
-        first = data[1][1] if len(data) > 1 and len(data[1]) > 1 else None
+        first = data[1][0] if len(data) > 1 else None
 
         return {"count": count, "first_date": first}
 
@@ -33,6 +33,8 @@ class WaybackAdapter:
     def parked_flag(snapshots: int, age_years: float | None) -> bool:
         if age_years is not None and age_years < 0.5:
             return False
+        if age_years is not None and age_years >= 1.0:
+            return snapshots <= 0
         return snapshots == 0
 
     @staticmethod

@@ -65,6 +65,11 @@ def appraise_cmd(
     cfg = Config.load()
     if fresh:
         cfg.fresh = True
+        import os
+        try:
+            os.remove(cfg.cache_path)
+        except FileNotFoundError:
+            pass
 
     engine = _build_engine(cfg)
 

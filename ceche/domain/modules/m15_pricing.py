@@ -6,7 +6,7 @@ from ceche.domain.models import ModuleResult, ModuleStatus
 from ceche.domain.modules.base import BaseModule
 
 _SCARCITY_LENGTH: list[tuple[int, float]] = [
-    (3, 10_000_000),
+    (3, 13_000_000),
     (4, 1_000_000),
     (5, 100_000),
     (7, 10_000),
@@ -15,7 +15,7 @@ _SCARCITY_LENGTH: list[tuple[int, float]] = [
 
 _SCARCITY_WORD: list[tuple[int, float]] = [
     (1, 5_000_000),
-    (2, 50_000),
+    (2, 8_000),
     (3, 1_000),
     (100, 100),
 ]
@@ -194,7 +194,7 @@ class M15Pricing(BaseModule):
             mult: float | None = context.get(mult_key)
             if mult is not None and isinstance(mult, (int, float)) and mult > 0:
                 contribution = (
-                    1.0 + weight * (float(mult) - 1.0) if mult >= 1.0 else float(mult)
+                    float(mult) ** weight if mult >= 1.0 else float(mult)
                 )
                 value *= contribution
                 breakdown[name] = round(contribution, 4)
