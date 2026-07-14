@@ -45,6 +45,14 @@ class RDAPResult:
         }
 
 
+@dataclass(frozen=True)
+class SearchResult:
+    result_count: int | None
+    snippets: list[str]
+    competing_tld: bool
+    raw: dict[str, Any] | None = None
+
+
 class DomainError(Exception):
     """Base exception for domain-layer errors."""
 

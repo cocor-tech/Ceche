@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any
 
+from ceche.domain.models import SearchResult
+
 
 class RDAPPort(ABC):
     @abstractmethod
@@ -18,6 +20,12 @@ class ConfigPort(ABC):
 
     @abstractmethod
     def get(self, key: str, default: Any = None) -> Any:
+        ...
+
+
+class SearchPort(ABC):
+    @abstractmethod
+    async def search(self, query: str) -> SearchResult:
         ...
 
 

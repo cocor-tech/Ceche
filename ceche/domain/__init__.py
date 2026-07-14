@@ -15,7 +15,8 @@ from ceche.domain.modules.m05_pronounceability import M5Pronounceability
 from ceche.domain.modules.m06_segmenter import M6Segmenter
 from ceche.domain.modules.m07_keyword_popularity import M7KeywordPopularity
 from ceche.domain.modules.m08_cpc import M8CPC
-from ceche.domain.ports import CachePort, ConfigPort, KeywordPopularityPort, RDAPPort
+from ceche.domain.modules.m09_search_results import M9SearchResults
+from ceche.domain.ports import CachePort, ConfigPort, KeywordPopularityPort, RDAPPort, SearchPort
 
 __all__ = [
     "M1RDAP",
@@ -32,9 +33,11 @@ __all__ = [
     "M5Pronounceability",
     "M6Segmenter",
     "M7KeywordPopularity",
+    "M9SearchResults",
     "ModuleResult",
     "ModuleStatus",
     "PortNotConfiguredError",
     "RDAPPort",
     "RDAPResult",
+    "SearchPort",
 ]
