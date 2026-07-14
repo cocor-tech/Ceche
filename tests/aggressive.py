@@ -278,12 +278,12 @@ async def main() -> int:
     # 9. CACHE INTEGRITY
     # ----------------------------------------------------------------
     print("\n=== 9. Cache integrity ===")
-    import os
+    import pathlib
     import tempfile
 
     from ceche.infrastructure.cache.sqlite_adapter import SQLiteCacheAdapter
     with tempfile.TemporaryDirectory() as tmp:
-        db_path = str(os.path.join(tmp, "cache.db"))
+        db_path = str(pathlib.Path(tmp) / "cache.db")
         cache = SQLiteCacheAdapter(db_path)
         await cache.set("test:key", {"x": 42}, 3600)
         v = await cache.get("test:key")
@@ -312,7 +312,7 @@ async def main() -> int:
     print("\n=== 10. Module status tracking ===")
     result = await engine.appraise("car.com")
     mods = result.modules
-    statuses = {k: v.get("status", "?") for k, v in mods.items()}
+    _statuses = {k: v.get("status", "?") for k, v in mods.items()}
     expected_modules = {"m1_rdap", "m2_tld_table", "m3_length", "m4_word_count",
                         "m5_pronounceability", "m6_segmenter", "m7_keyword_popularity",
                         "m8_cpc", "m10_cross_tld", "m11_trademark", "m12_authority",

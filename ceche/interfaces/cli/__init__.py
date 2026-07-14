@@ -17,6 +17,8 @@ from ceche.infrastructure.authority.wayback_adapter import WaybackAdapter
 from ceche.infrastructure.cache.sqlite_adapter import SQLiteCacheAdapter
 from ceche.infrastructure.keyword.static_adapter import StaticKeywordAdapter
 from ceche.infrastructure.rdap.rdap_adapter import RDAPAdapter
+from ceche.infrastructure.search.brave_adapter import BraveAdapter
+from ceche.infrastructure.search.google_cse_adapter import GoogleCSEAdapter
 from ceche.infrastructure.trademark.uspto_adapter import USPTOAdapter
 
 app = typer.Typer(name="ceche", help="Domain Appraisal Engine")
@@ -32,10 +34,19 @@ def _build_engine(cfg: Config) -> AppraisalEngine:
     ahrefs = AhrefsDRAdapter()
     opr = OPRAdapter(cfg.opr_key) if cfg.opr_key else None
 
+    search = None
+    search_backup = None
+    if cfg.google_cse_key and cfg.google_cse_cx:
+        search = GoogleCSEAdapter(cfg.google_cse_key, cfg.google_cse_cx)
+    if cfg.brave_key:
+        search_backup = BraveAdapter(cfg.brave_key)
+
     return AppraisalEngine(
         rdap=rdap,
         cache=cache,
         keyword=keyword,
+        search=search,
+        search_backup=search_backup,
         trademark=trademark,
         wayback=wayback,
         ahrefs=ahrefs,
@@ -43,7 +54,7 @@ def _build_engine(cfg: Config) -> AppraisalEngine:
     )
 
 
-@app.command(name="appraise")  # noqa: B008
+@app.command(name="appraise")
 def appraise_cmd(
     domains: list[str] = typer.Argument(..., help="Domain(s) to appraise or path to file"),
     fresh: bool = typer.Option(False, "--fresh", "-f", help="Bypass cache"),

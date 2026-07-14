@@ -65,11 +65,11 @@ class AppraisalEngine:
         self._m9 = M9SearchResults(search, search_backup) if search else None
         self._m10 = M10CrossTLD(rdap)
         self._m11 = M11Trademark(trademark, trademark_backup) if trademark else None
-        self._m12 = (
-            M12Authority(wayback, ahrefs, opr)
-            if wayback and ahrefs and opr
-            else None
-        )
+        self._m12 = M12Authority(
+            wayback=wayback,
+            ahrefs=ahrefs,
+            opr=opr,
+        ) if wayback else None
         self._m13 = M13Confidence()
         self._m15 = M15Pricing()
         self._m16 = M16Brandability()

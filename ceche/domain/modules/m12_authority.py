@@ -15,8 +15,8 @@ class M12Authority(BaseModule):
     def __init__(
         self,
         wayback: WaybackAdapter,
-        ahrefs: AhrefsDRAdapter,
-        opr: OPRAdapter,
+        ahrefs: AhrefsDRAdapter | None = None,
+        opr: OPRAdapter | None = None,
     ) -> None:
         self._wayback = wayback
         self._ahrefs = ahrefs
@@ -43,28 +43,42 @@ class M12Authority(BaseModule):
         snapshots = _to_int(wayback_data.get("count", 0))
         parked = WaybackAdapter.parked_flag(snapshots, age_years)
 
-        ahrefs_dr = await self._ahrefs.lookup(domain)
-        opr_data = await self._opr.lookup(domain)
-        opr_score: float | None = opr_data.get("score")
-        if isinstance(opr_score, (int, float)):
-            opr_score = float(opr_score)
+        ahrefs_dr: float | None = None
+        if self._ahrefs is not None:
+            try:
+                ahrefs_dr = await self._ahrefs.lookup(domain)
+            except Exception:
+                ahrefs_dr = None
 
-        authority = _blend_authority(ahrefs_dr, opr_score)
+        opr_raw: dict[str, Any] = {}
+        opr_score: float | None = None
+        if self._opr is not None:
+            try:
+                opr_raw = await self._opr.lookup(domain)
+                raw_score = opr_raw.get("score")
+                if isinstance(raw_score, (int, float)):
+                    opr_score = float(raw_score)
+            except Exception:
+                opr_score = None
 
+        authority = _dynamic_blend(ahrefs_dr, opr_score, snapshots)
         multiplier = _authority_multiplier(authority, parked)
+        sources_active = _count_sources(ahrefs_dr, opr_score)
 
         return ModuleResult(
             module_name=self.name,
             value=multiplier,
-            confidence=_confidence(ahrefs_dr, opr_score),
+            confidence=_confidence_from_sources(sources_active),
             data={
                 "age_years": age_years,
                 "snapshots": snapshots,
                 "parked": parked,
                 "ahrefs_dr": ahrefs_dr,
                 "opr_score": opr_score,
-                "authority": round(authority, 2) if authority is not None else None,
+                "authority": round(authority, 3) if authority is not None else None,
                 "multiplier": multiplier,
+                "sources_active": sources_active,
+                "sources_total": _total_available(self._ahrefs, self._opr),
             },
             status=ModuleStatus.SUCCESS,
         )
@@ -77,21 +91,76 @@ def _to_int(value: Any) -> int:
         return 0
 
 
-def _blend_authority(ahrefs: float | None, opr: float | None) -> float | None:
-    if ahrefs is not None and opr is not None:
-        return ahrefs / 100 * 0.6 + opr / 10 * 0.4
+def _snapshot_score(snapshots: int) -> float:
+    if snapshots >= 1000:
+        return 1.0
+    if snapshots >= 100:
+        return 0.7
+    if snapshots >= 10:
+        return 0.4
+    if snapshots > 0:
+        return 0.2
+    return 0.0
+
+
+def _dynamic_blend(
+    ahrefs: float | None,
+    opr: float | None,
+    snapshots: int,
+) -> float | None:
+    scores: list[float] = []
+    weights: list[float] = []
+
     if ahrefs is not None:
-        return ahrefs / 100 * 0.8
+        scores.append(ahrefs / 100.0)
+        weights.append(1.0)
+
     if opr is not None:
-        return opr / 10 * 0.8
-    return None
+        scores.append(opr / 10.0)
+        weights.append(0.8)
+
+    hist = _snapshot_score(snapshots)
+    scores.append(hist)
+    weights.append(0.5)
+
+    if not scores:
+        return None
+
+    total_weight = sum(weights)
+    return sum(s * w for s, w in zip(scores, weights, strict=False)) / total_weight
+
+
+def _count_sources(ahrefs: float | None, opr: float | None) -> int:
+    count = 1
+    if ahrefs is not None:
+        count += 1
+    if opr is not None:
+        count += 1
+    return count
+
+
+def _total_available(ahrefs: object, opr: object) -> int:
+    total = 1
+    if ahrefs is not None:
+        total += 1
+    if opr is not None:
+        total += 1
+    return total
+
+
+def _confidence_from_sources(sources_active: int) -> float:
+    if sources_active >= 3:
+        return 1.0
+    if sources_active == 2:
+        return 0.7
+    return 0.4
 
 
 def _authority_multiplier(authority: float | None, parked: bool) -> float:
-    if authority is None:
-        authority = 0.0
     if parked:
-        return min(0.5, authority)
+        return 0.5
+    if authority is None:
+        return 1.0
     if authority >= 0.90:
         return 3.0
     if authority >= 0.50:
@@ -99,12 +168,3 @@ def _authority_multiplier(authority: float | None, parked: bool) -> float:
     if authority >= 0.20:
         return 1.2
     return 1.0
-
-
-def _confidence(ahrefs: float | None, opr: float | None) -> float:
-    sources = bool(ahrefs is not None) + bool(opr is not None)
-    if sources >= 2:
-        return 1.0
-    if sources == 1:
-        return 0.6
-    return 0.0
