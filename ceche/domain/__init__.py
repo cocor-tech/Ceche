@@ -19,6 +19,7 @@ from ceche.domain.modules.m09_search_results import M9SearchResults
 from ceche.domain.modules.m10_cross_tld import M10CrossTLD
 from ceche.domain.modules.m11_trademark import M11Trademark
 from ceche.domain.modules.m12_authority import M12Authority
+from ceche.domain.modules.m13_confidence import M13Confidence
 from ceche.domain.ports import (
     CachePort,
     ConfigPort,
@@ -47,6 +48,7 @@ __all__ = [
     "M10CrossTLD",
     "M11Trademark",
     "M12Authority",
+    "M13Confidence",
     "ModuleResult",
     "ModuleStatus",
     "PortNotConfiguredError",
