@@ -1,4 +1,4 @@
-"""Tests for M15 — Pricing Module (weighted exponentiation)."""
+"""Tests for M15 — Pricing with scarcity-based dynamic base."""
 
 from __future__ import annotations
 
@@ -13,113 +13,117 @@ def m15():
 
 
 class TestM15Pricing:
-    async def test_com_registered_weighted(self, m15):
+    async def test_car_com_scarcity_driven(self, m15):
         ctx = {
             "weight_profile": "tier_10",
+            "sld": "car",
+            "word_count": 1,
             "registered": True,
+            "m6_status": "split_found",
             "mult_m1_rdap": 3.0,
-            "mult_m3_length": 15.0,
-            "mult_m4_word_count": 20.0,
             "mult_m5_pronounceability": 2.0,
             "mult_m7_keyword_popularity": 8.0,
-            "mult_m8_cpc": 1.0,
-            "mult_m10_cross_tld": 1.0,
-            "mult_m11_trademark": 1.0,
+            "mult_m8_cpc": 5.0,
             "mult_m12_authority": 3.0,
+            "mult_m11_trademark": 1.0,
             "completeness_ratio": 1.0,
         }
         result = await m15.run(ctx)
         assert result.status == ModuleStatus.SUCCESS
-        assert result.data["estimated_value"] > 30_000
+        assert result.data["estimated_value"] > 5_000_000
 
-    async def test_com_unregistered_weights_normalized(self, m15):
+    async def test_nachase_com_mid_tier(self, m15):
         ctx = {
             "weight_profile": "tier_10",
-            "registered": False,
-            "mult_m3_length": 2.0,
-            "mult_m4_word_count": 3.0,
+            "sld": "nachase",
+            "word_count": 2,
+            "registered": True,
+            "m6_status": "split_found",
+            "mult_m1_rdap": 1.5,
             "mult_m5_pronounceability": 1.5,
-            "mult_m7_keyword_popularity": 5.0,
+            "mult_m7_keyword_popularity": 1.5,
             "mult_m8_cpc": 1.0,
-            "mult_m10_cross_tld": 1.0,
+            "mult_m12_authority": 2.0,
             "mult_m11_trademark": 1.0,
-            "completeness_ratio": 0.8,
+            "completeness_ratio": 1.0,
         }
         result = await m15.run(ctx)
-        assert result.data["estimated_value"] > 0
+        assert 10_000 <= result.data["estimated_value"] <= 100_000
 
-    async def test_brandable_fallback_used(self, m15):
+    async def test_brandable_scarcity(self, m15):
         ctx = {
             "weight_profile": "tier_10",
-            "m6_status": "no_split",
+            "sld": "nekwasa",
+            "word_count": None,
             "registered": False,
-            "mult_m3_length": 2.0,
+            "m6_status": "no_split",
             "mult_m5_pronounceability": 1.5,
             "mult_m16_brandability": 5.0,
             "mult_m7_keyword_popularity": 1.0,
             "mult_m8_cpc": 1.0,
             "mult_m10_cross_tld": 1.0,
+            "mult_m11_trademark": 1.0,
             "completeness_ratio": 0.5,
         }
         result = await m15.run(ctx)
-        assert "m16_brandability" in result.data["breakdown"]
-        assert result.data["range"]["low"] < result.data["range"]["high"]
+        assert result.data["estimated_value"] > 500
 
-    async def test_weighted_differs_from_blind(self, m15):
-        ctx_blind = {
-            "weight_profile": "tier_00",
-            "registered": False,
-            "mult_m3_length": 15.0,
-            "mult_m4_word_count": 20.0,
-            "mult_m8_cpc": 1.0,
-            "mult_m7_keyword_popularity": 1.0,
-            "mult_m5_pronounceability": 2.0,
-            "mult_m10_cross_tld": 1.0,
-            "completeness_ratio": 1.0,
-        }
-        ctx_weighted = {
+    async def test_fjfbfj_near_zero(self, m15):
+        ctx = {
             "weight_profile": "tier_10",
-            "registered": True,
-            "mult_m1_rdap": 1.0,
-            "mult_m3_length": 15.0,
-            "mult_m4_word_count": 20.0,
-            "mult_m5_pronounceability": 2.0,
+            "sld": "fjfbfj",
+            "word_count": None,
+            "registered": False,
+            "m6_status": "no_split",
+            "mult_m5_pronounceability": 1.0,
+            "mult_m16_brandability": 1.0,
             "mult_m7_keyword_popularity": 1.0,
             "mult_m8_cpc": 1.0,
             "mult_m10_cross_tld": 1.0,
             "mult_m11_trademark": 1.0,
-            "mult_m12_authority": 1.0,
             "completeness_ratio": 1.0,
         }
-        r_default = await m15.run(ctx_blind)
-        r_tier10 = await m15.run(ctx_weighted)
-        assert r_default.data["estimated_value"] != r_tier10.data["estimated_value"]
+        result = await m15.run(ctx)
+        assert result.data["estimated_value"] < 20_000
 
-    async def test_word_count_dominates_in_tier_10(self, m15):
-        ctx_high = {
-            "weight_profile": "tier_10",
+    async def test_icu_tld_punishes(self, m15):
+        ctx = {
+            "weight_profile": "tier_01",
+            "sld": "car",
+            "word_count": 1,
             "registered": False,
-            "mult_m3_length": 2.0,
-            "mult_m4_word_count": 20.0,
+            "m6_status": "split_found",
+            "mult_m5_pronounceability": 2.0,
+            "mult_m7_keyword_popularity": 8.0,
+            "mult_m8_cpc": 5.0,
+            "mult_m11_trademark": 1.0,
             "completeness_ratio": 1.0,
         }
-        ctx_low = {
-            "weight_profile": "tier_10",
-            "registered": False,
-            "mult_m3_length": 2.0,
-            "mult_m4_word_count": 1.0,
-            "completeness_ratio": 1.0,
-        }
-        r_high = await m15.run(ctx_high)
-        r_low = await m15.run(ctx_low)
-        assert r_high.data["estimated_value"] > r_low.data["estimated_value"]
+        result = await m15.run(ctx)
+        assert result.data["estimated_value"] > 100_000
 
-    async def test_trademark_multiplier_punishes(self, m15):
+    async def test_scarcity_base_shown(self, m15):
+        ctx = {
+            "weight_profile": "tier_10",
+            "sld": "car",
+            "word_count": 1,
+            "registered": True,
+            "m6_status": "split_found",
+            "mult_m1_rdap": 3.0,
+            "mult_m11_trademark": 1.0,
+            "completeness_ratio": 1.0,
+        }
+        result = await m15.run(ctx)
+        assert "scarcity_base" in result.data
+        assert result.data["scarcity_base"] >= 5_000_000
+
+    async def test_trademark_penalty(self, m15):
         ctx_clean = {
             "weight_profile": "tier_10",
-            "registered": False,
-            "mult_m4_word_count": 20.0,
-            "mult_m3_length": 15.0,
+            "sld": "car",
+            "word_count": 1,
+            "registered": True,
+            "m6_status": "split_found",
             "mult_m11_trademark": 1.0,
             "completeness_ratio": 1.0,
         }
@@ -128,35 +132,6 @@ class TestM15Pricing:
         r_bad = await m15.run(ctx_bad)
         assert r_bad.data["estimated_value"] < r_clean.data["estimated_value"]
 
-    async def test_icu_base_is_100(self, m15):
-        result = await m15.run({
-            "weight_profile": "tier_01",
-            "registered": False,
-            "mult_m4_word_count": 3.0,
-            "mult_m11_trademark": 1.0,
-            "completeness_ratio": 0.8,
-        })
-        assert result.data["tld_base"] == 100.0
-
-    async def test_no_weight_profile_returns_error(self, m15):
+    async def test_no_profile_returns_error(self, m15):
         result = await m15.run({"completeness_ratio": 1.0})
         assert result.status == ModuleStatus.ERROR
-
-    async def test_abc_com_weighted_valuation(self, m15):
-        ctx = {
-            "weight_profile": "tier_10",
-            "registered": True,
-            "mult_m1_rdap": 3.0,
-            "mult_m3_length": 8.0,
-            "mult_m4_word_count": 20.0,
-            "mult_m5_pronounceability": 1.5,
-            "mult_m7_keyword_popularity": 5.0,
-            "mult_m8_cpc": 1.0,
-            "mult_m10_cross_tld": 1.0,
-            "mult_m11_trademark": 1.0,
-            "mult_m12_authority": 3.0,
-            "completeness_ratio": 1.0,
-        }
-        result = await m15.run(ctx)
-        value = result.data["estimated_value"]
-        assert 20_000 <= value <= 500_000

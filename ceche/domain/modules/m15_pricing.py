@@ -5,28 +5,41 @@ from typing import Any
 from ceche.domain.models import ModuleResult, ModuleStatus
 from ceche.domain.modules.base import BaseModule
 
-_TLD_BASE: dict[str, float] = {
-    "tier_10": 5000.0,
-    "tier_09": 2000.0,
-    "tier_085": 2000.0,
-    "tier_08": 2000.0,
-    "tier_075": 800.0,
-    "tier_07": 800.0,
-    "tier_065": 500.0,
-    "tier_06": 500.0,
-    "tier_05": 200.0,
-    "tier_045": 200.0,
-    "tier_04": 200.0,
-    "tier_035": 100.0,
-    "tier_03": 100.0,
-    "tier_02": 100.0,
-    "tier_01": 100.0,
-    "tier_00": 20.0,
+_SCARCITY_LENGTH: list[tuple[int, float]] = [
+    (3, 10_000_000),
+    (4, 1_000_000),
+    (5, 100_000),
+    (7, 10_000),
+    (100, 1_000),
+]
+
+_SCARCITY_WORD: list[tuple[int, float]] = [
+    (1, 5_000_000),
+    (2, 50_000),
+    (3, 1_000),
+    (100, 100),
+]
+
+_TLD_MULT: dict[str, float] = {
+    "tier_10": 1.0,
+    "tier_09": 0.3,
+    "tier_085": 0.4,
+    "tier_08": 0.3,
+    "tier_075": 0.2,
+    "tier_07": 0.2,
+    "tier_065": 0.15,
+    "tier_06": 0.15,
+    "tier_05": 0.05,
+    "tier_045": 0.05,
+    "tier_04": 0.05,
+    "tier_035": 0.02,
+    "tier_03": 0.02,
+    "tier_02": 0.02,
+    "tier_01": 0.01,
+    "tier_00": 0.005,
 }
 
 _WEIGHTS_TIER_10 = {
-    "m4_word_count": 0.30,
-    "m3_length": 0.20,
     "m1_rdap": 0.15,
     "m7_keyword_popularity": 0.10,
     "m8_cpc": 0.10,
@@ -39,9 +52,7 @@ _WEIGHTS_TIER_10 = {
 _WEIGHTS_TIER_08 = {
     "m7_keyword_popularity": 0.25,
     "m8_cpc": 0.20,
-    "m4_word_count": 0.15,
     "m5_pronounceability": 0.10,
-    "m3_length": 0.10,
     "m1_rdap": 0.10,
     "m10_cross_tld": 0.05,
     "m11_trademark": 0.03,
@@ -53,9 +64,7 @@ _WEIGHTS_TIER_06 = {
     "m8_cpc": 0.25,
     "m5_pronounceability": 0.15,
     "m10_cross_tld": 0.10,
-    "m4_word_count": 0.10,
     "m1_rdap": 0.05,
-    "m3_length": 0.05,
 }
 
 _WEIGHTS_TIER_04 = {
@@ -63,9 +72,7 @@ _WEIGHTS_TIER_04 = {
     "m7_keyword_popularity": 0.25,
     "m10_cross_tld": 0.15,
     "m5_pronounceability": 0.10,
-    "m4_word_count": 0.08,
     "m1_rdap": 0.05,
-    "m3_length": 0.05,
     "m11_trademark": 0.02,
 }
 
@@ -74,9 +81,7 @@ _WEIGHTS_TIER_01 = {
     "m7_keyword_popularity": 0.25,
     "m10_cross_tld": 0.20,
     "m5_pronounceability": 0.10,
-    "m4_word_count": 0.05,
     "m1_rdap": 0.03,
-    "m3_length": 0.02,
 }
 
 _WEIGHTS_TIER_00 = {
@@ -84,18 +89,14 @@ _WEIGHTS_TIER_00 = {
     "m7_keyword_popularity": 0.30,
     "m10_cross_tld": 0.20,
     "m5_pronounceability": 0.05,
-    "m4_word_count": 0.03,
-    "m3_length": 0.02,
 }
 
 _WEIGHTS_BRANDABLE = {
     "m5_pronounceability": 0.30,
     "m16_brandability": 0.25,
-    "m3_length": 0.20,
     "m7_keyword_popularity": 0.10,
     "m8_cpc": 0.05,
     "m10_cross_tld": 0.05,
-    "m2_tld_table": 0.03,
     "m11_trademark": 0.02,
 }
 
@@ -121,6 +122,29 @@ _PROFILES = {
 _UNAVAILABLE_WEIGHT_ALIASES = frozenset({"m1_rdap", "m12_authority"})
 
 
+def _lookup_tier(value: int, table: list[tuple[int, float]]) -> float:
+    for threshold, amount in table:
+        if value <= threshold:
+            return amount
+    return table[-1][1]
+
+
+def _scarcity_base(
+    sld: str,
+    word_count: int | None,
+    weight_profile: str,
+    is_brandable: bool,
+) -> float:
+    length_tier = _lookup_tier(len(sld), _SCARCITY_LENGTH)
+    if is_brandable or word_count is None:
+        scarcity = length_tier
+    else:
+        word_tier = _lookup_tier(word_count, _SCARCITY_WORD)
+        scarcity = max(length_tier, word_tier)
+    tld_mult = _TLD_MULT.get(weight_profile, 0.005)
+    return scarcity * tld_mult
+
+
 class M15Pricing(BaseModule):
     name = "m15_pricing"
 
@@ -129,10 +153,16 @@ class M15Pricing(BaseModule):
         if not weight_profile:
             return ModuleResult.error(self.name, "no weight_profile in context")
 
-        base = _TLD_BASE.get(weight_profile, 2.0)
+        sld: str | None = context.get("sld")
+        word_count: object = context.get("word_count")
+        registered: bool = context.get("registered", True)
+        is_no_split: bool = context.get("m6_status") == "no_split"
 
-        is_no_split = context.get("m6_status") == "no_split"
-        registered = context.get("registered", True)
+        wc: int | None = None
+        if isinstance(word_count, (int, float)) and not is_no_split:
+            wc = int(word_count)
+
+        base = _scarcity_base(sld or "", wc, weight_profile, is_no_split)
 
         if is_no_split:
             weights = dict(_WEIGHTS_BRANDABLE)
@@ -143,12 +173,23 @@ class M15Pricing(BaseModule):
             for alias in _UNAVAILABLE_WEIGHT_ALIASES:
                 weights.pop(alias, None)
 
+        active_weights: dict[str, float] = {}
+        for name, w in weights.items():
+            mult_key = f"mult_{name}"
+            raw = context.get(mult_key)
+            if raw is not None and isinstance(raw, (int, float)):
+                active_weights[name] = w
+
+        if active_weights:
+            total = sum(active_weights.values())
+            normalized = {n: w / total for n, w in active_weights.items()}
+        else:
+            normalized = {}
+
         value = base
         breakdown: dict[str, float | None] = {}
 
-        for name, weight in weights.items():
-            if weight <= 0:
-                continue
+        for name, weight in normalized.items():
             mult_key = f"mult_{name}"
             mult: float | None = context.get(mult_key)
             if mult is not None and isinstance(mult, (int, float)) and mult > 0:
@@ -157,7 +198,9 @@ class M15Pricing(BaseModule):
                 )
                 value *= contribution
                 breakdown[name] = round(contribution, 4)
-            else:
+
+        for name in weights:
+            if name not in breakdown:
                 breakdown[name] = None
 
         completeness: float = context.get("completeness_ratio", 1.0)
@@ -174,7 +217,7 @@ class M15Pricing(BaseModule):
             confidence=completeness,
             data={
                 "estimated_value": round(value, 2),
-                "tld_base": base,
+                "scarcity_base": round(base, 2),
                 "range": {"low": round(low, 2), "high": round(high, 2)},
                 "completeness_ratio": round(completeness, 2),
                 "weight_profile": weight_profile,
