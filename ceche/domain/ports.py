@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any
 
-from ceche.domain.models import SearchResult
+from ceche.domain.models import SearchResult, TrademarkResult
 
 
 class RDAPPort(ABC):
@@ -32,6 +32,12 @@ class SearchPort(ABC):
 class KeywordPopularityPort(ABC):
     @abstractmethod
     async def get_popularity(self, term: str) -> float:
+        ...
+
+
+class TrademarkPort(ABC):
+    @abstractmethod
+    async def check(self, term: str) -> TrademarkResult:
         ...
 
 

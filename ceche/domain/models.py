@@ -53,6 +53,14 @@ class SearchResult:
     raw: dict[str, Any] | None = None
 
 
+@dataclass(frozen=True)
+class TrademarkResult:
+    conflict: bool
+    severity: str
+    marks: list[str]
+    raw: dict[str, Any] | None = None
+
+
 class DomainError(Exception):
     """Base exception for domain-layer errors."""
 

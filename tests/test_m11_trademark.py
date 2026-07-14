@@ -1,0 +1,81 @@
+"""Tests for M11 — Trademark Check."""
+
+from __future__ import annotations
+
+import pytest
+
+from ceche.domain import M11Trademark, ModuleStatus
+from ceche.infrastructure.trademark.uspto_adapter import USPTOAdapter
+
+
+@pytest.fixture
+def adapter():
+    return USPTOAdapter()
+
+
+@pytest.fixture
+def m11(adapter):
+    return M11Trademark(adapter)
+
+
+class TestUSPTOAdapter:
+    async def test_known_mark_detected(self, adapter):
+        result = await adapter.check("google")
+        assert result.conflict is True
+        assert result.severity == "exact"
+        assert "Google" in result.marks
+
+    async def test_generic_word_no_conflict(self, adapter):
+        result = await adapter.check("car")
+        assert result.conflict is False
+        assert result.severity == "none"
+
+    async def test_unknown_word_no_conflict(self, adapter):
+        result = await adapter.check("xyzzy1234")
+        assert result.conflict is False
+
+    async def test_case_insensitive(self, adapter):
+        r1 = await adapter.check("Google")
+        r2 = await adapter.check("google")
+        assert r1.conflict == r2.conflict
+
+
+class TestM11Trademark:
+    async def test_single_known_mark(self, m11):
+        result = await m11.run({"words": ["google"]})
+        assert result.status == ModuleStatus.SUCCESS
+        assert result.data["severity"] == "exact"
+        assert result.data["multiplier"] == 0.1
+
+    async def test_no_conflict(self, m11):
+        result = await m11.run({"words": ["car"]})
+        assert result.data["severity"] == "none"
+        assert result.data["multiplier"] == 1.0
+
+    async def test_multiple_words_exact_wins(self, m11):
+        result = await m11.run({"words": ["car", "google", "blog"]})
+        assert result.data["severity"] == "exact"
+
+    async def test_no_words_returns_skipped(self, m11):
+        result = await m11.run({})
+        assert result.status == ModuleStatus.SKIPPED
+
+    async def test_empty_words_returns_skipped(self, m11):
+        result = await m11.run({"words": []})
+        assert result.status == ModuleStatus.SKIPPED
+
+    async def test_invalid_words_returns_error(self, m11):
+        result = await m11.run({"words": "not_a_list"})
+        assert result.status == ModuleStatus.ERROR
+
+    async def test_value_is_multiplier(self, m11):
+        result = await m11.run({"words": ["google"]})
+        assert result.value == 0.1
+
+    async def test_falls_back_on_error(self, adapter):
+        class _Failing:
+            async def check(self, term: str):
+                raise RuntimeError("fail")
+        m11 = M11Trademark(_Failing(), adapter)
+        result = await m11.run({"words": ["google"]})
+        assert result.data["multiplier"] == 0.1
