@@ -21,6 +21,7 @@ from ceche.domain.modules.m11_trademark import M11Trademark
 from ceche.domain.modules.m12_authority import M12Authority
 from ceche.domain.modules.m13_confidence import M13Confidence
 from ceche.domain.modules.m15_pricing import M15Pricing
+from ceche.domain.modules.m16_brandability import M16Brandability
 from ceche.domain.ports import (
     CachePort,
     ConfigPort,
@@ -51,6 +52,7 @@ __all__ = [
     "M12Authority",
     "M13Confidence",
     "M15Pricing",
+    "M16Brandability",
     "ModuleResult",
     "ModuleStatus",
     "PortNotConfiguredError",
