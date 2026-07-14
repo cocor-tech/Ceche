@@ -81,9 +81,10 @@ class AppraisalEngine:
         sld = parts[0] if len(parts) == 2 else domain
         tld = parts[1] if len(parts) == 2 else ""
 
-        ctx["domain_name"] = domain
-        ctx["sld"] = sld
-        ctx["tld"] = tld
+        ctx["domain_name"] = domain.lower()
+        ctx["sld"] = sld.lower()
+        ctx["tld"] = tld.lower().lstrip(".")
+        domain_normalized = ctx["domain_name"]
 
         # Phase 1
         results = await asyncio.gather(
@@ -162,7 +163,7 @@ class AppraisalEngine:
         range_high = prange.get("high") if isinstance(prange, dict) else None
 
         return AppraisalResult(
-            domain=domain,
+            domain=domain_normalized,
             estimated_value=float(estimated) if estimated else None,
             range_low=float(range_low) if range_low else None,
             range_high=float(range_high) if range_high else None,
