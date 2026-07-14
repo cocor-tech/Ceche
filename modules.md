@@ -1,6 +1,6 @@
 # Ceche — Module Development Milestones
 
-11 milestones, 2 sub-modules each. Build order optimized for dependency resolution and earliest-possible end-to-end testing.
+13 milestones, 2 sub-modules each. Build order optimized for dependency resolution and earliest-possible end-to-end testing.
 
 ---
 
@@ -369,6 +369,88 @@
 
 ---
 
+## Milestone 12 — Engine Orchestrator (M17)
+
+### 12.1 — AppraisalEngine Pipeline
+
+**Deliverable:** Central coordinator that runs all 16 modules in dependency-respecting phases.
+
+- Domain parser: split `example.com` → SLD=`example`, TLD=`com`; handle punycode, strip protocols, lowercase
+- Dependency graph with 6 execution phases:
+  - Phase 1 (parallel): M1 RDAP, M2 TLD table, M6 segmenter
+  - Phase 2 (sequential after M6): M3 length, M4 word count, M5 pronounceability
+  - Phase 3 (parallel, needs M6 words): M7 keyword, M8 CPC, M11 trademark
+  - Phase 4 (parallel, needs M1): M9 search, M10 cross-TLD, M12 authority
+  - Phase 5 (conditional): M16 brandability ONLY if M6 = `no_split`
+  - Phase 6 (final): M13 confidence, M15 pricing
+- Shared context dict: each module reads from / writes to `words`, `mult_*`, `registered`, `age_years`, `weight_profile`, `m6_status`, `completeness_ratio`
+- Brandable fallback: if M6 = `no_split`, skip M4/M7/M8, activate M16
+- Error isolation: `try/except` per module, `ERROR` status never crashes the pipeline
+- Graceful degradation: unregistered → skip M1/M12 multiplier contributions, M13 accounts for reduced available weight
+- Constructor injection: receives all port/adapter implementations at init time
+- Single method: `async def appraise(domain: str) -> AppraisalResult`
+
+**Dependencies:** All milestones 1–11.
+
+### 12.2 — AppraisalResult & Context Wiring
+
+**Deliverable:** Typed output model and complete context wiring.
+
+- `AppraisalResult` dataclass: `domain`, `estimated_value`, `range_low`, `range_high`, `confidence`, `tld_score`, `weight_profile`, `modules` (per-module breakdown dict)
+- Context key contracts:
+  - **Produced by M1:** `registered`, `age_years`
+  - **Produced by M2:** `tld_score`, `weight_profile`
+  - **Produced by M6:** `words`, `word_count`, `m6_status`
+  - **Produced by M3–M12:** `mult_{module_name}` (multiplier float)
+  - **Produced by M13:** `completeness_ratio`, `confidence_label`
+  - **Consumed by M15:** `weight_profile`, all `mult_*`, `completeness_ratio`
+- Engine writes module results back into context after each phase
+- E2E tests: mock all adapters, verify known values (`abc.com` → ~$4.3M, `car.com` → ~$21.6M, `nekwasa.com` → ~$1,500)
+
+**Dependencies:** All milestones 1–11.
+
+---
+
+## Milestone 13 — Entry Points & Distribution (M18)
+
+### 13.1 — CLI Entry Point (Typer)
+
+**Deliverable:** Production-ready command-line interface.
+
+- `ceche appraise <domain>` — single domain
+- `ceche appraise <file>` — batch from file
+- `ceche appraise <domain1> <domain2>` — multiple domains
+- Flags: `--fresh`, `--format json|table|pretty`, `--include-raw`, `--skip`, `--only`, `--quiet`
+- Output formatters: JSON dump, terminal table (rich), human-readable pretty
+- Dependency injection: wire all infrastructure adapters, inject into engine
+- Handle SIGINT (print partial results)
+- Exit codes: 0 success, 1 partial failure, 2 error, 3 config error
+- Unit tests: mock engine, verify output formatting
+- Integration test: run against a real domain with `--fresh`
+
+**Dependencies:** All milestones 1–12.
+
+### 13.2 — Web API Entry Point (FastAPI)
+
+**Deliverable:** Production-ready REST API.
+
+- FastAPI application with factory pattern
+- `POST /v1/appraise` — `{"domain": "example.com"}`, returns full AppraisalResult
+- `GET /v1/appraise/{domain}` — alternative GET endpoint
+- `GET /v1/health` — cache status, API key validity
+- Pydantic request/response models matching domain dataclasses
+- OpenAPI 3.0 auto-generated (Swagger UI at `/v1/docs`)
+- Rate limiting per IP (configurable)
+- Structured JSON logging (request ID, duration, module statuses)
+- CORS for web client access
+- Startup: validate config, verify cache, preload static data
+- Unit tests: FastAPI TestClient with mocked engine
+- Integration test: full POST /v1/appraise cycle
+
+**Dependencies:** All milestones 1–12.
+
+---
+
 ## Summary
 
 | Milestone | Focus | Modules Covered |
@@ -382,7 +464,9 @@
 | 7 | Market signals | M7, M9 |
 | 8 | Risk & competition | M11, M10 |
 | 9 | Authority & branding | M12, M16 |
-| 10 | Confidence + pricing | M13, M15 + engine integration |
-| 11 | CLI + Web API | — |
+| 10 | Confidence + pricing | M13, M15 |
+| 11 | Engine orchestrator | M17 |
+| 12 | CLI entry point | M18 (CLI) |
+| 13 | Web API entry point | M18 (API) |
 
 Each milestone is independently testable. Mock data is available from milestone 5 onward for any module not yet implemented.
