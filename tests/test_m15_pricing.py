@@ -30,7 +30,7 @@ class TestM15Pricing:
         }
         result = await m15.run(ctx)
         assert result.status == ModuleStatus.SUCCESS
-        assert result.data["estimated_value"] > 500_000
+        assert result.data["estimated_value"] > 30_000
 
     async def test_com_unregistered_weights_normalized(self, m15):
         ctx = {
@@ -128,7 +128,7 @@ class TestM15Pricing:
         r_bad = await m15.run(ctx_bad)
         assert r_bad.data["estimated_value"] < r_clean.data["estimated_value"]
 
-    async def test_icu_base_is_200(self, m15):
+    async def test_icu_base_is_100(self, m15):
         result = await m15.run({
             "weight_profile": "tier_01",
             "registered": False,
@@ -136,7 +136,7 @@ class TestM15Pricing:
             "mult_m11_trademark": 1.0,
             "completeness_ratio": 0.8,
         })
-        assert result.data["tld_base"] == 200.0
+        assert result.data["tld_base"] == 100.0
 
     async def test_no_weight_profile_returns_error(self, m15):
         result = await m15.run({"completeness_ratio": 1.0})
@@ -159,4 +159,4 @@ class TestM15Pricing:
         }
         result = await m15.run(ctx)
         value = result.data["estimated_value"]
-        assert 500_000 <= value <= 5_000_000
+        assert 20_000 <= value <= 500_000

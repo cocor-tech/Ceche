@@ -6,22 +6,22 @@ from ceche.domain.models import ModuleResult, ModuleStatus
 from ceche.domain.modules.base import BaseModule
 
 _TLD_BASE: dict[str, float] = {
-    "tier_10": 50000.0,
-    "tier_09": 10000.0,
-    "tier_085": 10000.0,
-    "tier_08": 10000.0,
-    "tier_075": 5000.0,
-    "tier_07": 5000.0,
-    "tier_065": 5000.0,
-    "tier_06": 5000.0,
-    "tier_05": 1000.0,
-    "tier_045": 1000.0,
-    "tier_04": 1000.0,
-    "tier_035": 200.0,
-    "tier_03": 200.0,
-    "tier_02": 200.0,
-    "tier_01": 200.0,
-    "tier_00": 50.0,
+    "tier_10": 5000.0,
+    "tier_09": 2000.0,
+    "tier_085": 2000.0,
+    "tier_08": 2000.0,
+    "tier_075": 800.0,
+    "tier_07": 800.0,
+    "tier_065": 500.0,
+    "tier_06": 500.0,
+    "tier_05": 200.0,
+    "tier_045": 200.0,
+    "tier_04": 200.0,
+    "tier_035": 100.0,
+    "tier_03": 100.0,
+    "tier_02": 100.0,
+    "tier_01": 100.0,
+    "tier_00": 20.0,
 }
 
 _WEIGHTS_TIER_10 = {
@@ -143,24 +143,10 @@ class M15Pricing(BaseModule):
             for alias in _UNAVAILABLE_WEIGHT_ALIASES:
                 weights.pop(alias, None)
 
-        active_weights: dict[str, float] = {}
-        for name, w in weights.items():
-            mult_key = f"mult_{name}"
-            raw = context.get(mult_key)
-            if raw is not None and isinstance(raw, (int, float)):
-                active_weights[name] = w
-
-        if active_weights:
-            total_active = sum(active_weights.values())
-            normalized = {n: w / total_active for n, w in active_weights.items()}
-        else:
-            total_active = sum(weights.values())
-            normalized = {n: w / total_active for n, w in weights.items()}
-
         value = base
         breakdown: dict[str, float | None] = {}
 
-        for name, weight in normalized.items():
+        for name, weight in weights.items():
             if weight <= 0:
                 continue
             mult_key = f"mult_{name}"
@@ -172,10 +158,6 @@ class M15Pricing(BaseModule):
                 value *= contribution
                 breakdown[name] = round(contribution, 4)
             else:
-                breakdown[name] = None
-
-        for name in weights:
-            if name not in breakdown:
                 breakdown[name] = None
 
         completeness: float = context.get("completeness_ratio", 1.0)
