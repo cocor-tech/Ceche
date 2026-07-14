@@ -14,10 +14,12 @@ from ceche.domain.modules.m04_word_count import M4WordCount
 from ceche.domain.modules.m05_pronounceability import M5Pronounceability
 from ceche.domain.modules.m06_segmenter import M6Segmenter
 from ceche.domain.modules.m07_keyword_popularity import M7KeywordPopularity
+from ceche.domain.modules.m08_cpc import M8CPC
 from ceche.domain.ports import CachePort, ConfigPort, KeywordPopularityPort, RDAPPort
 
 __all__ = [
     "M1RDAP",
+    "M8CPC",
     "BaseModule",
     "CachePort",
     "ConfigPort",
