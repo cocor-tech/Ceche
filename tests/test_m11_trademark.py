@@ -80,3 +80,19 @@ class TestM11Trademark:
         m11 = M11Trademark(adapter)
         result = await m11.run({"sld": "google"})
         assert result.data["severity"] == "exact"
+
+    async def test_single_word_com_trademark_unpenalized(self, adapter):
+        m11 = M11Trademark(adapter)
+        result = await m11.run({"sld": "disney", "words": ["disney"], "tld": "com", "word_count": 1})
+        assert result.data["severity"] == "none"
+        assert result.data["multiplier"] == 1.0
+
+    async def test_multi_word_trademark_still_penalized(self, adapter):
+        m11 = M11Trademark(adapter)
+        result = await m11.run({"sld": "googletest", "words": ["google", "test"], "tld": "com", "word_count": 2})
+        assert result.data["severity"] == "exact"
+
+    async def test_non_com_trademark_still_penalized(self, adapter):
+        m11 = M11Trademark(adapter)
+        result = await m11.run({"sld": "disney", "words": ["disney"], "tld": "io", "word_count": 1})
+        assert result.data["severity"] == "exact"

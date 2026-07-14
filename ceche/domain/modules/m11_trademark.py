@@ -49,6 +49,12 @@ class M11Trademark(BaseModule):
                 worst_severity = full_result.severity
                 worst_marks = full_result.marks
 
+        tld = context.get("tld", "")
+        wc = context.get("word_count")
+        if tld == "com" and wc == 1 and worst_severity == "exact":
+            worst_severity = "none"
+            worst_marks = []
+
         multiplier = _SEVERITY_MULT.get(worst_severity, 1.0)
 
         return ModuleResult(
