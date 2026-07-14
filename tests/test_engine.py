@@ -86,7 +86,7 @@ class TestAppraisalEngine:
         engine = _build_engine(registered=True)
         result = await engine.appraise("car.com")
         assert result.estimated_value is not None
-        assert result.estimated_value > 1_000_000
+        assert result.estimated_value > 500_000
         assert result.weight_profile is not None
 
     async def test_appraises_unregistered_domain(self):

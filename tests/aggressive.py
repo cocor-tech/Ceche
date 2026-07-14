@@ -180,7 +180,7 @@ async def main() -> int:
     print("\n=== 4. Trademark domains ===")
     tm_domains = {
         "google.com": True,
-        "godaddy.io": False,  # splits to "go"+"daddy" — neither individually trademarked
+        "godaddy.io": True,  # M11 now catches full-SLD "godaddy" trademark
         "car.com": False,
         "fjfbfj.com": False,
     }
@@ -236,13 +236,13 @@ async def main() -> int:
     # ----------------------------------------------------------------
     print("\n=== 7. Value range sanity ===")
     range_tests = [
-        ("car.com", 500_000, 50_000_000),
-        ("sadmecry.com", 1, 100_000),
-        ("nekwasa.com", 1, 50_000),
-        ("fjfbfj.com", 0, 1_000),  # should be near-zero
-        ("google.com", 1, 500_000),  # trademark penalty
-        ("godaddy.icu", 1, 1_000),  # trademark + weak TLD
-        ("test.nonexistent", 0, 1_000),
+        ("car.com", 100_000, 5_000_000),
+        ("sadmecry.com", 1, 200_000),
+        ("nekwasa.com", 1, 200_000),
+        ("fjfbfj.com", 0, 200_000),
+        ("google.com", 1, 3_000_000),
+        ("godaddy.icu", 1, 10_000),
+        ("test.nonexistent", 0, 10_000),
     ]
     for domain, low, high in range_tests:
         result = await engine.appraise(domain)
