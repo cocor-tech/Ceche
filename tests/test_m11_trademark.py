@@ -1,4 +1,4 @@
-"""Tests for M11 — Trademark Check."""
+"""Tests for M11 — Trademark Check (with full-SLD check)."""
 
 from __future__ import annotations
 
@@ -42,34 +42,30 @@ class TestUSPTOAdapter:
 
 class TestM11Trademark:
     async def test_single_known_mark(self, m11):
-        result = await m11.run({"words": ["google"]})
+        result = await m11.run({"sld": "google", "words": ["google"]})
         assert result.status == ModuleStatus.SUCCESS
         assert result.data["severity"] == "exact"
         assert result.data["multiplier"] == 0.1
 
     async def test_no_conflict(self, m11):
-        result = await m11.run({"words": ["car"]})
+        result = await m11.run({"sld": "car", "words": ["car"]})
         assert result.data["severity"] == "none"
         assert result.data["multiplier"] == 1.0
 
     async def test_multiple_words_exact_wins(self, m11):
-        result = await m11.run({"words": ["car", "google", "blog"]})
+        result = await m11.run({"sld": "google", "words": ["car", "google", "blog"]})
         assert result.data["severity"] == "exact"
 
-    async def test_no_words_returns_skipped(self, m11):
+    async def test_full_sld_catches_trademark(self, m11):
+        result = await m11.run({"sld": "godaddy", "words": ["go", "daddy"]})
+        assert result.data["severity"] == "exact"
+
+    async def test_no_sld_returns_error(self, m11):
         result = await m11.run({})
-        assert result.status == ModuleStatus.SKIPPED
-
-    async def test_empty_words_returns_skipped(self, m11):
-        result = await m11.run({"words": []})
-        assert result.status == ModuleStatus.SKIPPED
-
-    async def test_invalid_words_returns_error(self, m11):
-        result = await m11.run({"words": "not_a_list"})
         assert result.status == ModuleStatus.ERROR
 
     async def test_value_is_multiplier(self, m11):
-        result = await m11.run({"words": ["google"]})
+        result = await m11.run({"sld": "google", "words": ["google"]})
         assert result.value == 0.1
 
     async def test_falls_back_on_error(self, adapter):
@@ -77,5 +73,10 @@ class TestM11Trademark:
             async def check(self, term: str):
                 raise RuntimeError("fail")
         m11 = M11Trademark(_Failing(), adapter)
-        result = await m11.run({"words": ["google"]})
+        result = await m11.run({"sld": "google"})
         assert result.data["multiplier"] == 0.1
+
+    async def test_sld_checked_even_without_words(self, adapter):
+        m11 = M11Trademark(adapter)
+        result = await m11.run({"sld": "google"})
+        assert result.data["severity"] == "exact"

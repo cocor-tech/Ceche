@@ -21,31 +21,33 @@ class M11Trademark(BaseModule):
         self._backup = backup
 
     async def run(self, context: dict[str, Any]) -> ModuleResult:
+        sld: str | None = context.get("sld")
         words: Any = context.get("words")
-        if not words:
-            return ModuleResult(
-                module_name=self.name,
-                value=None,
-                confidence=0.0,
-                data={"reason": "no words in context"},
-                status=ModuleStatus.SKIPPED,
-            )
 
-        if not isinstance(words, list) or not all(isinstance(w, str) for w in words):
-            return ModuleResult.error(self.name, f"invalid words: {words}")
+        if not sld:
+            return ModuleResult.error(self.name, "no sld in context")
 
         worst_severity = "none"
         worst_marks: list[str] = []
 
-        for word in words:
-            result = await self._check_word(word)
-            if result.severity == "exact":
-                worst_severity = "exact"
-                worst_marks = result.marks
-                break
-            if result.severity == "partial" and worst_severity != "exact":
-                worst_severity = "partial"
-                worst_marks = result.marks
+        if isinstance(words, list) and all(isinstance(w, str) for w in words):
+            for word in words:
+                result = await self._check_word(word)
+                if result.severity == "exact":
+                    worst_severity = "exact"
+                    worst_marks = result.marks
+                    break
+                if result.severity == "partial" and worst_severity != "exact":
+                    worst_severity = "partial"
+                    worst_marks = result.marks
+
+        if worst_severity != "exact":
+            full_result = await self._check_word(sld.lower())
+            if full_result.severity == "exact" or (
+                full_result.severity == "partial" and worst_severity == "none"
+            ):
+                worst_severity = full_result.severity
+                worst_marks = full_result.marks
 
         multiplier = _SEVERITY_MULT.get(worst_severity, 1.0)
 
