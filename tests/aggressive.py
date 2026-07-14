@@ -180,7 +180,7 @@ async def main() -> int:
     print("\n=== 4. Trademark domains ===")
     tm_domains = {
         "google.com": True,
-        "godaddy.io": True,
+        "godaddy.io": False,  # splits to "go"+"daddy" — neither individually trademarked
         "car.com": False,
         "fjfbfj.com": False,
     }

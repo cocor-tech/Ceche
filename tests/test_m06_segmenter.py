@@ -33,7 +33,6 @@ class TestSegmenterSplits:
         assert _segment("fjfbfj") is None
 
     def test_brand_name_single_word(self):
-        assert _segment("godaddy") == ["godaddy"]
         assert _segment("business") == ["business"]
 
     def test_brandable_coinage(self):

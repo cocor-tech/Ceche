@@ -8,10 +8,10 @@ from wordfreq import word_frequency
 from ceche.domain.models import ModuleResult, ModuleStatus
 from ceche.domain.modules.base import BaseModule
 
-_MIN_FREQ = 1e-7
-_MIN_FREQ_SHORT = 1e-5
+_MIN_FREQ = 1e-5
 _MIN_WORD_LEN = 2
 _SPLIT_PENALTY = 5.0
+_SINGLE_CHAR_WORDS = frozenset({"a", "i"})
 
 
 class M6Segmenter(BaseModule):
@@ -68,13 +68,12 @@ def _segment(s: str) -> list[str] | None:
         return _freq_cache[word]
 
     def _valid(word: str) -> bool:
-        if len(word) < _MIN_WORD_LEN:
+        if len(word) < _MIN_WORD_LEN and word not in _SINGLE_CHAR_WORDS:
             return False
         f = _freq(word)
         if f <= 0:
             return False
-        threshold = _MIN_FREQ_SHORT if len(word) == 2 else _MIN_FREQ
-        return f >= threshold
+        return f >= _MIN_FREQ
 
     dp_score = [-math.inf] * (n + 1)
     dp_prev = [-1] * (n + 1)
