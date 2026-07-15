@@ -1,66 +1,86 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from ceche.infrastructure.ai.adapters.base import BaseAIAdapter
 from ceche.infrastructure.ai.adapters.generic import GenericAIAdapter
 
-_MODEL_REGISTRY: dict[str, dict[str, Any]] = {
+
+@dataclass
+class ModelSpec:
+    provider: str
+    model: str
+    temperature: float = 0.1
+    max_tokens: int = 150
+
+    def clone_with(self, **kwargs: Any) -> ModelSpec:
+        return ModelSpec(
+            provider=kwargs.get("provider", self.provider),
+            model=kwargs.get("model", self.model),
+            temperature=kwargs.get("temperature", self.temperature),
+            max_tokens=kwargs.get("max_tokens", self.max_tokens),
+        )
+
+
+_PROVIDER_CFG: dict[str, dict[str, Any]] = {
     "deepseek": {
         "base_url": "https://api.deepseek.com/v1",
-        "default_model": "deepseek-chat",
         "cost_in": 0.00014,
         "cost_out": 0.00028,
+        "models": ["deepseek-chat", "deepseek-reasoner"],
     },
     "openai": {
         "base_url": "https://api.openai.com/v1",
-        "default_model": "gpt-4o-mini",
         "cost_in": 0.00015,
         "cost_out": 0.00060,
+        "models": ["gpt-4o-mini", "gpt-4o", "gpt-4.1-nano"],
     },
     "kimi": {
         "base_url": "https://api.moonshot.cn/v1",
-        "default_model": "moonshot-v1-8k",
         "cost_in": 0.00300,
         "cost_out": 0.00300,
+        "models": ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
     },
     "glm": {
         "base_url": "https://open.bigmodel.cn/api/paas/v4",
-        "default_model": "glm-4-flash",
         "cost_in": 0.00010,
         "cost_out": 0.00010,
+        "models": ["glm-4-flash", "glm-4", "glm-4-plus"],
     },
     "minimax": {
         "base_url": "https://api.minimax.chat/v1",
-        "default_model": "abab6.5s-chat",
         "cost_in": 0.00100,
         "cost_out": 0.00100,
+        "models": ["abab6.5s-chat", "abab7-chat-preview"],
     },
     "openrouter": {
         "base_url": "https://openrouter.ai/api/v1",
-        "default_model": "openai/gpt-4o-mini",
         "cost_in": 0.00015,
         "cost_out": 0.00060,
+        "models": ["openai/gpt-4o-mini", "deepseek/deepseek-chat", "anthropic/claude-3-haiku"],
     },
-}
-
-_DEFAULT_MODEL_OVERRIDES: dict[str, str] = {
-    "deepseek": "deepseek-chat",
 }
 
 
 class ModelRouter:
     def __init__(self) -> None:
         self._adapters: dict[str, BaseAIAdapter] = {}
-        self._module_assignments: dict[str, str] = {}
-        self._default_provider = "none"
+        self._module_specs: dict[str, ModelSpec] = {}
+        self._default_spec: ModelSpec | None = None
 
-    def register_provider(self, provider_id: str, api_key: str) -> None:
-        if provider_id not in _MODEL_REGISTRY:
+    def register_provider(
+        self,
+        provider_id: str,
+        api_key: str,
+        model: str | None = None,
+    ) -> None:
+        if provider_id not in _PROVIDER_CFG:
             return
-        cfg = _MODEL_REGISTRY[provider_id]
-        model = _DEFAULT_MODEL_OVERRIDES.get(provider_id, cfg["default_model"])
-        self._adapters[provider_id] = GenericAIAdapter(
+        cfg = _PROVIDER_CFG[provider_id]
+        if model is None:
+            model = cfg["models"][0]
+        adapter = GenericAIAdapter(
             api_key=api_key,
             base_url=cfg["base_url"],
             model=model,
@@ -68,21 +88,54 @@ class ModelRouter:
             cost_in=cfg["cost_in"],
             cost_out=cfg["cost_out"],
         )
-        if not self._default_provider or self._default_provider == "none":
-            self._default_provider = provider_id
+        self._adapters[provider_id] = adapter
+        if self._default_spec is None:
+            self._default_spec = ModelSpec(provider=provider_id, model=model)
 
-    def assign_module(self, module: str, provider_id: str) -> None:
-        self._module_assignments[module] = provider_id
+    def assign_spec(self, module: str, spec: ModelSpec) -> None:
+        self._module_specs[module] = spec
 
-    def assign_modules(self, modules: list[str], provider_id: str) -> None:
+    def assign_modules(
+        self,
+        modules: list[str],
+        provider: str,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> None:
+        if provider not in self._adapters:
+            return
+        cfg = _PROVIDER_CFG[provider]
+        model_name = model or cfg["models"][0]
+        spec = ModelSpec(
+            provider=provider,
+            model=model_name,
+            temperature=temperature or 0.1,
+            max_tokens=max_tokens or 150,
+        )
         for mod in modules:
-            self._module_assignments[mod] = provider_id
+            self._module_specs[mod] = spec.clone_with()
+
+    def set_default(
+        self, provider: str, model: str | None = None,
+        temperature: float = 0.1, max_tokens: int = 150,
+    ) -> None:
+        self._default_spec = ModelSpec(
+            provider=provider,
+            model=model or _PROVIDER_CFG[provider]["models"][0],
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+
+    def get_spec(self, module: str) -> ModelSpec:
+        fallback = ModelSpec(provider="none", model="none")
+        return self._module_specs.get(module, self._default_spec or fallback)
 
     async def complete(
         self, module: str, prompt: str, system: str = "",
     ) -> str:
-        provider = self._module_assignments.get(module, self._default_provider)
-        adapter = self._adapters.get(provider)
+        spec = self.get_spec(module)
+        adapter = self._adapters.get(spec.provider)
         if adapter is None:
             return ""
         resp = await adapter.complete(prompt, system=system)
@@ -96,6 +149,11 @@ class ModelRouter:
     def providers(self) -> list[str]:
         return list(self._adapters.keys())
 
+    def models_for(self, provider: str) -> list[str]:
+        cfg: dict[str, Any] = _PROVIDER_CFG.get(provider, {})
+        models: list[str] = cfg.get("models", [])
+        return models
+
     @property
     def assignments(self) -> dict[str, str]:
-        return dict(self._module_assignments)
+        return {mod: f"{s.provider}/{s.model}" for mod, s in self._module_specs.items()}

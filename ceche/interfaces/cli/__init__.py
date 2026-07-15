@@ -32,25 +32,50 @@ def _build_router(cfg: Config) -> ModelRouter | None:
     router = ModelRouter()
 
     provider_keys: dict[str, list[str]] = {
-        "openai": ["OPENAI_API_KEY"],
         "deepseek": ["DEEPSEEK_API_KEY"],
+        "openai": ["OPENAI_API_KEY"],
         "kimi": ["KIMI_API_KEY", "MOONSHOT_API_KEY"],
         "glm": ["GLM_API_KEY", "ZHIPU_API_KEY"],
         "minimax": ["MINIMAX_API_KEY"],
         "openrouter": ["OPENROUTER_API_KEY"],
     }
+
     for provider_id, env_keys in provider_keys.items():
         for env_key in env_keys:
             key = os.getenv(env_key)
             if key:
-                router.register_provider(provider_id, key)
+                model = os.getenv(f"{provider_id.upper()}_MODEL")
+                router.register_provider(provider_id, key, model=model)
                 break
 
     if not router.enabled:
         return None
 
     primary = router.providers[0]
-    router.assign_modules(["m6", "m8", "m11", "m16"], primary)
+    temperature = float(os.getenv("CECHE_AI_TEMPERATURE", "0.1"))
+    max_tokens = int(os.getenv("CECHE_AI_MAX_TOKENS", "150"))
+
+    router.set_default(primary, temperature=temperature, max_tokens=max_tokens)
+
+    for module in ["m6", "m8", "m11", "m16"]:
+        mod_model = os.getenv(f"CECHE_{module.upper()}_MODEL")
+        mod_provider = os.getenv(f"CECHE_{module.upper()}_PROVIDER")
+        if mod_provider and mod_provider in router.providers:
+            router.assign_modules(
+                [module], mod_provider, model=mod_model,
+                temperature=temperature, max_tokens=max_tokens,
+            )
+        elif mod_model:
+            router.assign_modules(
+                [module], primary, model=mod_model,
+                temperature=temperature, max_tokens=max_tokens,
+            )
+        else:
+            router.assign_modules(
+                [module], primary,
+                temperature=temperature, max_tokens=max_tokens,
+            )
+
     return router
 
 
