@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -11,6 +12,10 @@ from rich.table import Table
 from ceche.config import Config
 from ceche.domain.result import AppraisalResult
 from ceche.engine import AppraisalEngine
+from ceche.infrastructure.ai.adapters.base import BaseAIAdapter
+from ceche.infrastructure.ai.adapters.noop import NoOpAdapter
+from ceche.infrastructure.ai.adapters.ollama import OllamaAdapter
+from ceche.infrastructure.ai.adapters.openai import OpenAIAdapter
 from ceche.infrastructure.authority.ahrefs_adapter import AhrefsDRAdapter
 from ceche.infrastructure.authority.opr_adapter import OPRAdapter
 from ceche.infrastructure.authority.wayback_adapter import WaybackAdapter
@@ -23,6 +28,17 @@ from ceche.infrastructure.trademark.uspto_adapter import USPTOAdapter
 
 app = typer.Typer(name="ceche", help="Domain Appraisal Engine")
 console = Console()
+
+
+def _build_ai(cfg: Config) -> BaseAIAdapter:
+    import os
+    openai_key = os.getenv("OPENAI_API_KEY")
+    if openai_key:
+        return OpenAIAdapter(openai_key)
+    try:
+        return OllamaAdapter()
+    except Exception:
+        return NoOpAdapter()
 
 
 def _build_engine(cfg: Config) -> AppraisalEngine:
@@ -41,16 +57,26 @@ def _build_engine(cfg: Config) -> AppraisalEngine:
     if cfg.brave_key:
         search_backup = BraveAdapter(cfg.brave_key)
 
+    ai: BaseAIAdapter = NoOpAdapter()
+    import os
+    if os.getenv("CECHE_AI_ENABLED", "").lower() in ("1", "true", "yes"):
+        ai = _build_ai(cfg)
+
+    class _AIPortAdapter:
+        def __init__(self, adapter: BaseAIAdapter) -> None:
+            self._adapter = adapter
+
+        async def complete(self, prompt: str) -> str:
+            resp = await self._adapter.complete(prompt)
+            return resp.content
+
+    ai_port: Any = _AIPortAdapter(ai)
+
     return AppraisalEngine(
-        rdap=rdap,
-        cache=cache,
-        keyword=keyword,
-        search=search,
-        search_backup=search_backup,
-        trademark=trademark,
-        wayback=wayback,
-        ahrefs=ahrefs,
-        opr=opr,
+        rdap=rdap, cache=cache, keyword=keyword,
+        search=search, search_backup=search_backup,
+        trademark=trademark, wayback=wayback,
+        ahrefs=ahrefs, opr=opr, ai=ai_port,
     )
 
 
