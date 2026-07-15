@@ -64,7 +64,13 @@ class AppraisalEngine:
         self._m6 = M6Segmenter(ai)
         self._m7 = M7KeywordPopularity(keyword) if keyword else None
         self._m8 = M8CPC(ai=ai)
-        self._m9 = M9SearchResults(search, search_backup) if search else None
+        self._m9: M9SearchResults | None
+        if search:
+            self._m9 = M9SearchResults(search, search_backup)
+        elif search_backup:
+            self._m9 = M9SearchResults(search_backup, None)
+        else:
+            self._m9 = None
         self._m10 = M10CrossTLD(rdap)
         self._m11 = M11Trademark(trademark, trademark_backup, ai=ai) if trademark else None
         self._m12 = (

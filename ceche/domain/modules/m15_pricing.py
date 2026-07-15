@@ -40,9 +40,10 @@ _TLD_MULT: dict[str, float] = {
 }
 
 _WEIGHTS_TIER_10 = {
-    "m1_rdap": 0.15,
-    "m7_keyword_popularity": 0.10,
-    "m8_cpc": 0.10,
+    "m1_rdap": 0.14,
+    "m7_keyword_popularity": 0.09,
+    "m8_cpc": 0.09,
+    "m9_search_results": 0.03,
     "m5_pronounceability": 0.05,
     "m12_authority": 0.05,
     "m11_trademark": 0.05,
@@ -50,26 +51,29 @@ _WEIGHTS_TIER_10 = {
 }
 
 _WEIGHTS_TIER_08 = {
-    "m7_keyword_popularity": 0.25,
-    "m8_cpc": 0.20,
+    "m7_keyword_popularity": 0.24,
+    "m8_cpc": 0.19,
+    "m9_search_results": 0.03,
     "m5_pronounceability": 0.10,
-    "m1_rdap": 0.10,
+    "m1_rdap": 0.09,
     "m10_cross_tld": 0.05,
     "m11_trademark": 0.03,
     "m12_authority": 0.02,
 }
 
 _WEIGHTS_TIER_06 = {
-    "m7_keyword_popularity": 0.30,
-    "m8_cpc": 0.25,
+    "m7_keyword_popularity": 0.29,
+    "m8_cpc": 0.24,
+    "m9_search_results": 0.03,
     "m5_pronounceability": 0.15,
     "m10_cross_tld": 0.10,
-    "m1_rdap": 0.05,
+    "m1_rdap": 0.04,
 }
 
 _WEIGHTS_TIER_04 = {
-    "m8_cpc": 0.30,
-    "m7_keyword_popularity": 0.25,
+    "m8_cpc": 0.29,
+    "m7_keyword_popularity": 0.24,
+    "m9_search_results": 0.02,
     "m10_cross_tld": 0.15,
     "m5_pronounceability": 0.10,
     "m1_rdap": 0.05,
@@ -77,16 +81,18 @@ _WEIGHTS_TIER_04 = {
 }
 
 _WEIGHTS_TIER_01 = {
-    "m8_cpc": 0.35,
-    "m7_keyword_popularity": 0.25,
+    "m8_cpc": 0.34,
+    "m7_keyword_popularity": 0.24,
+    "m9_search_results": 0.02,
     "m10_cross_tld": 0.20,
     "m5_pronounceability": 0.10,
     "m1_rdap": 0.03,
 }
 
 _WEIGHTS_TIER_00 = {
-    "m8_cpc": 0.40,
-    "m7_keyword_popularity": 0.30,
+    "m8_cpc": 0.39,
+    "m7_keyword_popularity": 0.29,
+    "m9_search_results": 0.02,
     "m10_cross_tld": 0.20,
     "m5_pronounceability": 0.05,
 }
