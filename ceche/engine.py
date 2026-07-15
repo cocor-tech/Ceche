@@ -165,6 +165,17 @@ class AppraisalEngine:
 
         # Phase 5 — brandable
         if is_no_split:
+            tasks = []
+            names = []
+            if self._m8:
+                tasks.append(self._m8.run(ctx))
+                names.append("m8_cpc")
+            if self._m7:
+                tasks.append(self._m7.run(ctx))
+                names.append("m7_keyword_popularity")
+            if tasks:
+                results_b = await asyncio.gather(*tasks, return_exceptions=True)
+                self._ingest(ctx, results_b, names)
             r16 = await self._safe(self._m16.run(ctx))
             self._ingest_single(ctx, r16, "m16_brandability")
 

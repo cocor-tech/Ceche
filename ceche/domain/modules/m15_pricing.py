@@ -98,12 +98,23 @@ _WEIGHTS_TIER_00 = {
 }
 
 _WEIGHTS_BRANDABLE = {
-    "m5_pronounceability": 0.30,
-    "m16_brandability": 0.25,
+    "m5_pronounceability": 0.25,
+    "m16_brandability": 0.20,
+    "m1_rdap": 0.10,
     "m7_keyword_popularity": 0.10,
     "m8_cpc": 0.05,
     "m10_cross_tld": 0.05,
     "m11_trademark": 0.02,
+}
+
+_CPC_TIER_BOOST: dict[str, float] = {
+    "elite": 7.0,
+    "high": 4.0,
+    "medium_high": 3.0,
+    "medium": 2.0,
+    "low": 1.5,
+    "informational": 1.0,
+    "none": 1.0,
 }
 
 _PROFILES = {
@@ -151,6 +162,17 @@ def _scarcity_base(
     return scarcity * tld_mult
 
 
+def _get_cpc_tier_from_context(ctx: dict[str, Any]) -> str | None:
+    mult = ctx.get("mult_m8_cpc")
+    if mult is None:
+        return None
+    tier_map = {
+        5.0: "elite", 3.0: "high", 2.5: "medium_high",
+        2.0: "medium", 1.5: "low",
+    }
+    return tier_map.get(float(mult))
+
+
 class M15Pricing(BaseModule):
     name = "m15_pricing"
 
@@ -171,6 +193,10 @@ class M15Pricing(BaseModule):
         base = _scarcity_base(sld or "", wc, weight_profile, is_no_split)
 
         if is_no_split:
+            cpc_tier = _get_cpc_tier_from_context(context)
+            if cpc_tier:
+                base *= _CPC_TIER_BOOST.get(cpc_tier, 1.0)
+
             weights = dict(_WEIGHTS_BRANDABLE)
         else:
             weights = dict(_PROFILES.get(weight_profile, _WEIGHTS_TIER_00))

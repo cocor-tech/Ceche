@@ -43,7 +43,14 @@ class M8CPC(BaseModule):
 
     async def run(self, context: dict[str, Any]) -> ModuleResult:
         words: Any = context.get("words")
+        sld: str | None = context.get("sld", "")
+        if not sld:
+            sld = ""
+
         if not words:
+            result = self._substring_scan(sld.lower())
+            if result is not None:
+                return result
             return ModuleResult(
                 module_name=self.name,
                 value=None,
@@ -88,6 +95,29 @@ class M8CPC(BaseModule):
             },
             status=ModuleStatus.SUCCESS,
         )
+
+    def _substring_scan(self, sld: str) -> ModuleResult | None:
+        best_tier: str | None = None
+        best_word: str | None = None
+        for word, tier in self._cpc_map.items():
+            if len(word) >= 3 and word in sld and _tier_rank(tier) < _tier_rank(best_tier):
+                best_tier = tier
+                best_word = word
+        if best_tier and best_word:
+            mult = _TIER_MULT.get(best_tier, 1.0)
+            return ModuleResult(
+                module_name=self.name,
+                value=mult,
+                confidence=0.7,
+                data={
+                    "tier": best_tier,
+                    "match_word": best_word,
+                    "multiplier": mult,
+                    "source": "substring_scan",
+                },
+                status=ModuleStatus.SUCCESS,
+            )
+        return None
 
     async def _ai_refine(self, words: list[str], context: dict[str, Any]) -> ModuleResult | None:
         for word in words:
