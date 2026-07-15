@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ceche.infrastructure.ai.adapters.base import BaseAIAdapter
 from ceche.infrastructure.ai.adapters.generic import GenericAIAdapter
+
+if TYPE_CHECKING:
+    from ceche.infrastructure.rate.limiter import RateLimiter
 
 
 @dataclass
@@ -68,10 +71,11 @@ _PROVIDER_CFG: dict[str, dict[str, Any]] = {
 
 
 class ModelRouter:
-    def __init__(self) -> None:
+    def __init__(self, rate_limiter: RateLimiter | None = None) -> None:
         self._adapters: dict[str, BaseAIAdapter] = {}
         self._module_specs: dict[str, ModelSpec] = {}
         self._default_spec: ModelSpec | None = None
+        self._limiter = rate_limiter
 
     def register_provider(
         self,
@@ -139,6 +143,8 @@ class ModelRouter:
         self, module: str, prompt: str, system: str = "",
     ) -> str:
         spec = self.get_spec(module)
+        if self._limiter:
+            await self._limiter.acquire(spec.provider)
         adapter = self._adapters.get(spec.provider)
         if adapter is None:
             return ""

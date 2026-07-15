@@ -96,8 +96,10 @@ class AppraisalEngine:
         self._m15 = M15Pricing()
         self._m16 = M16Brandability(ai=ai_m16)
 
-    async def appraise(self, domain: str) -> AppraisalResult:
+    async def appraise(self, domain: str, fresh: bool = False) -> AppraisalResult:
         ctx: dict[str, Any] = {}
+        if fresh:
+            ctx["_fresh"] = True
 
         parts = domain.rsplit(".", 1)
         sld = parts[0] if len(parts) == 2 else domain

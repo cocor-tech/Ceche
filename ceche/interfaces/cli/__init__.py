@@ -2,12 +2,22 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 from pathlib import Path
 
 import typer
 from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 from rich.table import Table
 
+from ceche.bulk_engine import BulkAppraisalEngine, BulkReport
 from ceche.config import Config
 from ceche.domain.result import AppraisalResult
 from ceche.engine import AppraisalEngine
@@ -18,6 +28,7 @@ from ceche.infrastructure.authority.opr_adapter import OPRAdapter
 from ceche.infrastructure.authority.wayback_adapter import WaybackAdapter
 from ceche.infrastructure.cache.sqlite_adapter import SQLiteCacheAdapter
 from ceche.infrastructure.keyword.static_adapter import StaticKeywordAdapter
+from ceche.infrastructure.rate.limiter import RateLimiter
 from ceche.infrastructure.rdap.rdap_adapter import RDAPAdapter
 from ceche.infrastructure.search.brave_adapter import BraveAdapter
 from ceche.infrastructure.search.google_cse_adapter import GoogleCSEAdapter
@@ -27,10 +38,10 @@ app = typer.Typer(name="ceche", help="Domain Appraisal Engine")
 console = Console()
 
 
-def _build_router(cfg: Config) -> ModelRouter | None:
+def _build_router(cfg: Config, rate_limiter: RateLimiter | None = None) -> ModelRouter | None:
     import os
 
-    router = ModelRouter()
+    router = ModelRouter(rate_limiter=rate_limiter)
 
     provider_keys: dict[str, list[str]] = {
         "deepseek": ["DEEPSEEK_API_KEY"],
@@ -96,26 +107,33 @@ def _build_router(cfg: Config) -> ModelRouter | None:
     return router
 
 
-def _build_engine(cfg: Config) -> AppraisalEngine:
+def _build_engine(cfg: Config, rate_limiter: RateLimiter | None = None) -> AppraisalEngine:
     cache = SQLiteCacheAdapter(cfg.cache_path)
-    rdap = RDAPAdapter()
+    rdap_client = rate_limiter.client_for("rdap", timeout=15.0) if rate_limiter else None
+    rdap = RDAPAdapter(client=rdap_client)
     keyword = StaticKeywordAdapter()
     trademark = USPTOAdapter()
-    wayback = WaybackAdapter()
-    ahrefs = AhrefsDRAdapter()
-    opr = OPRAdapter(cfg.opr_key) if cfg.opr_key else None
+
+    wayback_client = rate_limiter.client_for("wayback", timeout=15.0) if rate_limiter else None
+    ahrefs_client = rate_limiter.client_for("ahrefs", timeout=10.0) if rate_limiter else None
+    opr_client = rate_limiter.client_for("opr", timeout=10.0) if rate_limiter else None
+    wayback = WaybackAdapter(client=wayback_client)
+    ahrefs = AhrefsDRAdapter(client=ahrefs_client)
+    opr = OPRAdapter(cfg.opr_key, client=opr_client) if cfg.opr_key else None
 
     search = None
     search_backup = None
     if cfg.google_cse_key and cfg.google_cse_cx:
-        search = GoogleCSEAdapter(cfg.google_cse_key, cfg.google_cse_cx)
+        g_client = rate_limiter.client_for("google_cse", timeout=10.0) if rate_limiter else None
+        search = GoogleCSEAdapter(cfg.google_cse_key, cfg.google_cse_cx, client=g_client)
     if cfg.brave_key:
-        search_backup = BraveAdapter(cfg.brave_key)
+        b_client = rate_limiter.client_for("brave", timeout=10.0) if rate_limiter else None
+        search_backup = BraveAdapter(cfg.brave_key, client=b_client)
 
     router: ModelRouter | None = None
     import os
     if os.getenv("CECHE_AI_ENABLED", "").lower() in ("1", "true", "yes"):
-        router = _build_router(cfg)
+        router = _build_router(cfg, rate_limiter=rate_limiter)
 
     return AppraisalEngine(
         rdap=rdap, cache=cache, keyword=keyword,
@@ -209,16 +227,124 @@ def appraise_cmd(
         _output_pretty(results)
 
 
+@app.command(name="bulk")
+def bulk_cmd(
+    domains: list[str] = typer.Argument(
+        None, help="Domain(s) to appraise or path to file. If empty, reads from stdin."
+    ),
+    concurrency: int = typer.Option(
+        10, "--concurrency", "-c", min=1, max=100,
+        help="Max concurrent domains (default: 10)",
+    ),
+    fresh: bool = typer.Option(
+        False, "--fresh", "-f",
+        help="Force recheck — bypass all caches",
+    ),
+) -> None:
+    cfg = Config.load()
+    if fresh:
+        cfg.fresh = True
+        import contextlib
+        with contextlib.suppress(FileNotFoundError):
+            Path(cfg.cache_path).unlink()
+
+    resolved = _resolve_domains(domains or [])
+    all_domains = [d for d in resolved if "." in d]
+    if not all_domains:
+        console.print("[red]No domains provided.[/red]")
+        raise typer.Exit(code=1)
+
+    limiter = RateLimiter()
+    engine = _build_engine(cfg, rate_limiter=limiter)
+    bulk = BulkAppraisalEngine(engine, concurrency=concurrency, fresh=fresh)
+
+    if sys.stderr.isatty():
+        report = _run_with_progress(bulk, all_domains, concurrency)
+    else:
+        report = _run_with_text_progress(bulk, all_domains)
+
+    _output_bulk_json(report)
+
+    if report.summary.succeeded == 0:
+        raise typer.Exit(code=1)
+
+
+def _run_with_progress(
+    bulk: BulkAppraisalEngine, all_domains: list[str], concurrency: int,
+) -> BulkReport:
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TextColumn("· {task.fields[failed]} failed · {task.fields[rate]}/s"),
+        TimeRemainingColumn(),
+        console=Console(stderr=True),
+    ) as progress:
+        task = progress.add_task(
+            f"[cyan]Appraising {len(all_domains)} domains ({concurrency} concurrent)",
+            total=len(all_domains),
+            failed=0,
+            rate="0.0",
+        )
+
+        def _on_progress(total: int, succeeded: int, failed: int) -> None:
+            progress.update(task, completed=succeeded + failed, failed=failed,
+                            rate=f"{succeeded / (progress.tasks[0].elapsed or 0.001):.1f}")
+
+        return asyncio.run(bulk.run(all_domains, on_progress=_on_progress))
+
+
+def _run_with_text_progress(bulk: BulkAppraisalEngine, all_domains: list[str]) -> BulkReport:
+    last_report = [0, 0]  # succeeded, failed
+
+    def _on_progress(total: int, succeeded: int, failed: int) -> None:
+        if (succeeded + failed) != (last_report[0] + last_report[1]):
+            last_report[0] = succeeded
+            last_report[1] = failed
+            sys.stderr.write(
+                f"\r  {succeeded + failed}/{total} done · "
+                f"{failed} failed\n"
+            )
+            sys.stderr.flush()
+
+    sys.stderr.write(f"Appraising {len(all_domains)} domains\n")
+    sys.stderr.flush()
+    return asyncio.run(bulk.run(all_domains, on_progress=_on_progress))
+
+
 def _resolve_domains(args: list[str]) -> list[str]:
+    domains: list[str] = []
+
+    if not sys.stdin.isatty():
+        stdin_text = sys.stdin.read()
+        for line in stdin_text.splitlines():
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#"):
+                domains.append(stripped.lower())
+
     if len(args) == 1:
         path = Path(args[0])
         if path.is_file():
-            return [
-                line.strip()
-                for line in path.read_text().splitlines()
-                if line.strip() and not line.strip().startswith("#")
-            ]
-    return [d.strip().lower() for d in args if d.strip()]
+            for line in path.read_text().splitlines():
+                stripped = line.strip()
+                if stripped and not stripped.startswith("#"):
+                    domains.append(stripped.lower())
+        else:
+            domains.append(args[0].strip().lower())
+    elif args:
+        for d in args:
+            stripped = d.strip().lower()
+            if stripped:
+                domains.append(stripped)
+
+    seen: set[str] = set()
+    result: list[str] = []
+    for d in domains:
+        if d not in seen:
+            seen.add(d)
+            result.append(d)
+    return result
 
 
 def _output_json(results: list[AppraisalResult], include_raw: bool) -> None:
@@ -269,3 +395,47 @@ def _output_pretty(results: list[AppraisalResult]) -> None:
         if r.tld_score:
             console.print(f"  TLD Score:       {r.tld_score}")
         console.print("")
+
+
+def _output_bulk_json(report: object) -> None:
+    from ceche.bulk_engine import BulkReport
+
+    if not isinstance(report, BulkReport):
+        console.print(json.dumps({"error": "invalid report type"}, indent=2))
+        return
+
+    results_out = []
+    for r in report.results:
+        results_out.append({
+            "domain": r.domain,
+            "estimated_value": r.estimated_value,
+            "range": {"low": r.range_low, "high": r.range_high},
+            "confidence": r.confidence,
+            "completeness_ratio": r.completeness_ratio,
+            "tld_score": r.tld_score,
+            "weight_profile": r.weight_profile,
+            "modules": r.modules,
+        })
+
+    failures_out = []
+    for f in report.failures:
+        failures_out.append({
+            "domain": f.domain,
+            "error_type": f.error_type,
+            "error_message": f.error_message,
+            "phase": f.phase,
+            "traceback": f.traceback_text,
+        })
+
+    output = {
+        "summary": {
+            "total": report.summary.total,
+            "succeeded": report.summary.succeeded,
+            "failed": report.summary.failed,
+            "duration_seconds": report.summary.duration_seconds,
+            "rate_domains_per_second": report.summary.rate_domains_per_second,
+        },
+        "results": results_out,
+        "failures": failures_out,
+    }
+    console.print(json.dumps(output, indent=2, default=str))

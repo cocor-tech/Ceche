@@ -33,11 +33,14 @@ class M1RDAP(BaseModule):
         if not domain:
             return ModuleResult.error(self.name, "no domain in context")
         try:
-            raw = await self._cache.get_or_compute(
-                key=f"rdap:{domain}",
-                ttl=self.RDAP_CACHE_TTL,
-                fn=lambda: self._rdap.lookup(domain),
-            )
+            if context.get("_fresh"):
+                raw = await self._rdap.lookup(domain)
+            else:
+                raw = await self._cache.get_or_compute(
+                    key=f"rdap:{domain}",
+                    ttl=self.RDAP_CACHE_TTL,
+                    fn=lambda: self._rdap.lookup(domain),
+                )
         except Exception as exc:
             return ModuleResult.error(self.name, str(exc))
 
