@@ -32,9 +32,17 @@ console = Console()
 
 def _build_ai(cfg: Config) -> BaseAIAdapter:
     import os
+
+    from ceche.infrastructure.ai.adapters.generic import detect_providers
+
     openai_key = os.getenv("OPENAI_API_KEY")
     if openai_key:
         return OpenAIAdapter(openai_key)
+
+    providers = detect_providers()
+    if providers:
+        return providers[0]
+
     try:
         return OllamaAdapter()
     except Exception:
