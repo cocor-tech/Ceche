@@ -13,6 +13,12 @@ _SCARCITY_LENGTH: list[tuple[int, float]] = [
     (100, 1_000),
 ]
 
+_SCARCITY_LENGTH_BRANDABLE: list[tuple[int, float]] = [
+    (4, 10_000),
+    (7, 1_000),
+    (100, 500),
+]
+
 _SCARCITY_WORD: list[tuple[int, float]] = [
     (1, 5_000_000),
     (2, 8_000),
@@ -108,11 +114,11 @@ _WEIGHTS_BRANDABLE = {
 }
 
 _CPC_TIER_BOOST: dict[str, float] = {
-    "elite": 7.0,
-    "high": 4.0,
-    "medium_high": 3.0,
-    "medium": 2.0,
-    "low": 1.5,
+    "elite": 10.0,
+    "high": 1.5,
+    "medium_high": 1.3,
+    "medium": 1.2,
+    "low": 1.1,
     "informational": 1.0,
     "none": 1.0,
 }
@@ -152,10 +158,11 @@ def _scarcity_base(
     weight_profile: str,
     is_brandable: bool,
 ) -> float:
-    length_tier = _lookup_tier(len(sld), _SCARCITY_LENGTH)
     if is_brandable or word_count is None:
+        length_tier = _lookup_tier(len(sld), _SCARCITY_LENGTH_BRANDABLE)
         scarcity = length_tier
     else:
+        length_tier = _lookup_tier(len(sld), _SCARCITY_LENGTH)
         word_tier = _lookup_tier(word_count, _SCARCITY_WORD)
         scarcity = max(length_tier, word_tier)
     tld_mult = _TLD_MULT.get(weight_profile, 0.005)
