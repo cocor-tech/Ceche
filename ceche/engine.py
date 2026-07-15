@@ -201,8 +201,10 @@ class AppraisalEngine:
             return
         data = getattr(result, "data", {}) or {}
         value = getattr(result, "value", None)
-        status = getattr(result, "status", ModuleStatus.SKIPPED)
-        ctx[f"result_{name}"] = {**data, "status": status}
+        module_status = getattr(result, "status", ModuleStatus.SKIPPED)
+        entry = dict(data) if isinstance(data, dict) else {}
+        entry.setdefault("_module_status", str(module_status))
+        ctx[f"result_{name}"] = entry
         if value is not None:
             ctx[f"mult_{name}"] = value
 
