@@ -732,9 +732,9 @@
   "travel": "medium",
   "vacation": "medium",
   "vacations": "medium",
-  "hotel": "medium",
+  "hotel": "medium_high",
   "hotels": "medium",
-  "resort": "medium",
+  "resort": "medium_high",
   "resorts": "medium",
   "flight": "medium",
   "flights": "medium",
@@ -758,7 +758,7 @@
   "backpacking": "medium",
   "hostel": "medium",
   "hostels": "medium",
-  "airbnb": "medium",
+  "airbnb": "high",
   "vrbo": "medium",
   "lodging": "medium",
   "accommodation": "medium",
@@ -1145,5 +1145,9 @@
   "cannabis": "high",
   "vape": "high",
   "vaping": "high",
-  "delta": "medium"
+  "delta": "medium",
+  "bnb": "high",
+  "schools": "medium",
+  "motel": "medium",
+  "inn": "medium"
 }
