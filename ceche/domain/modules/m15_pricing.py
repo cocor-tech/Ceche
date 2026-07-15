@@ -202,7 +202,17 @@ class M15Pricing(BaseModule):
         if is_no_split:
             cpc_tier = _get_cpc_tier_from_context(context)
             if cpc_tier:
-                base *= _CPC_TIER_BOOST.get(cpc_tier, 1.0)
+                boost = _CPC_TIER_BOOST.get(cpc_tier, 1.0)
+                if context.get("sld_has_digit"):
+                    boost *= 0.3
+                base *= boost
+
+            m5_mult = context.get("mult_m5_pronounceability", 2.0)
+            if isinstance(m5_mult, (int, float)) and m5_mult <= 1.0:
+                base *= 0.5
+
+            if context.get("sld_has_digit"):
+                base *= 0.3
 
             weights = dict(_WEIGHTS_BRANDABLE)
         else:

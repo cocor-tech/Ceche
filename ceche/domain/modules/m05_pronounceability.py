@@ -50,6 +50,10 @@ _MULT_MAP: list[tuple[float, float]] = [
 ]
 
 
+def _has_double_vowel(s: str) -> bool:
+    return any(s[i] in _VOWELS and s[i] == s[i + 1] for i in range(len(s) - 1))
+
+
 class M5Pronounceability(BaseModule):
     name = "m5_pronounceability"
 
@@ -81,6 +85,10 @@ class M5Pronounceability(BaseModule):
 
         score = vowel_score * 0.4 + cluster_score * 0.3 + bigram_score * 0.3
         score = max(0.0, min(100.0, score))
+
+        if _has_double_vowel(sld_lower):
+            score *= 0.4
+
         multiplier = _resolve_multiplier(score)
 
         return ModuleResult(

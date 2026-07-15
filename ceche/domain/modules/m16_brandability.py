@@ -67,6 +67,21 @@ class M16Brandability(BaseModule):
 
         if not has_vowel:
             score = min(score, 15.0)
+
+        has_digit = any(c.isdigit() for c in sld_lower)
+        has_double_v = any(
+            sld_lower[i] in _VOWELS and sld_lower[i] == sld_lower[i + 1]
+            for i in range(len(sld_lower) - 1)
+        )
+        max_cons = _max_consonant_run(sld_lower)
+
+        if has_digit:
+            score = min(score, 30.0)
+        elif has_double_v:
+            score = min(score, 40.0)
+        elif not has_double_v and max_cons <= 3 and length <= 8 and has_vowel:
+            score = min(100.0, score * 1.5)
+
         multiplier = _resolve_multiplier(score)
 
         if self._ai and score < 80:
@@ -155,6 +170,18 @@ def _length_score(length: int) -> float:
         return 100.0
     extra = length - _IDEAL_MAX_LEN
     return max(10.0, 100.0 - extra * 12.0)
+
+
+def _max_consonant_run(s: str) -> int:
+    max_run = 0
+    run = 0
+    for c in s:
+        if c not in _VOWELS:
+            run += 1
+            max_run = max(max_run, run)
+        else:
+            run = 0
+    return max_run
 
 
 def _resolve_multiplier(score: float) -> float:

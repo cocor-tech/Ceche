@@ -24,9 +24,14 @@ class M3Length(BaseModule):
             return ModuleResult.error(self.name, "no sld in context")
 
         raw_length = len(sld)
+        has_digit = any(c.isdigit() for c in sld)
 
         score = _compute_score(raw_length)
         multiplier = _resolve_multiplier(score)
+
+        if has_digit:
+            multiplier = max(1.0, round(multiplier * 0.3, 2))
+        context["sld_has_digit"] = has_digit
 
         return ModuleResult(
             module_name=self.name,
@@ -36,6 +41,7 @@ class M3Length(BaseModule):
                 "raw_length": raw_length,
                 "score": round(score, 2),
                 "multiplier": multiplier,
+                "has_digit": has_digit,
             },
             status=ModuleStatus.SUCCESS,
         )
