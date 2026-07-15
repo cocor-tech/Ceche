@@ -18,7 +18,10 @@ class AIResponse:
 
 class BaseAIAdapter(ABC):
     @abstractmethod
-    async def complete(self, prompt: str, system: str = "") -> AIResponse:
+    async def complete(
+        self, prompt: str, system: str = "",
+        max_tokens: int = 150, temperature: float = 0.1,
+    ) -> AIResponse:
         ...
 
     @abstractmethod

@@ -30,7 +30,10 @@ class OpenAIAdapter(BaseAIAdapter):
             return 0.01000
         return 0.00060
 
-    async def complete(self, prompt: str, system: str = "") -> AIResponse:
+    async def complete(
+        self, prompt: str, system: str = "",
+        max_tokens: int = 150, temperature: float = 0.1,
+    ) -> AIResponse:
         headers = {
             "Authorization": f"Bearer {self._key}",
             "Content-Type": "application/json",
@@ -43,8 +46,8 @@ class OpenAIAdapter(BaseAIAdapter):
         payload: dict[str, Any] = {
             "model": self._model,
             "messages": messages,
-            "max_tokens": 150,
-            "temperature": 0.1,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
         }
 
         start = time.monotonic()

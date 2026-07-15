@@ -25,7 +25,10 @@ class OllamaAdapter(BaseAIAdapter):
     def cost_per_1k_output(self) -> float:
         return 0.0
 
-    async def complete(self, prompt: str, system: str = "") -> AIResponse:
+    async def complete(
+        self, prompt: str, system: str = "",
+        max_tokens: int = 150, temperature: float = 0.1,
+    ) -> AIResponse:
         messages: list[dict[str, Any]] = []
         if system:
             messages.append({"role": "system", "content": system})
@@ -35,7 +38,7 @@ class OllamaAdapter(BaseAIAdapter):
             "model": self._model,
             "messages": messages,
             "stream": False,
-            "options": {"temperature": 0.1, "num_predict": 150},
+            "options": {"temperature": temperature, "num_predict": max_tokens},
         }
 
         start = time.monotonic()

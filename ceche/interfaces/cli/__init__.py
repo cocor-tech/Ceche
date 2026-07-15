@@ -74,20 +74,23 @@ def _build_router(cfg: Config) -> ModelRouter | None:
     for module in ["m6", "m8", "m11", "m16"]:
         mod_model = os.getenv(f"CECHE_{module.upper()}_MODEL")
         mod_provider = os.getenv(f"CECHE_{module.upper()}_PROVIDER")
+        mt = int(os.getenv(f"CECHE_{module.upper()}_MAX_TOKENS", str(max_tokens)))
+        if module == "m6" and mt < 500:
+            mt = 500
         if mod_provider and mod_provider in router.providers:
             router.assign_modules(
                 [module], mod_provider, model=mod_model,
-                temperature=temperature, max_tokens=max_tokens,
+                temperature=temperature, max_tokens=mt,
             )
         elif mod_model:
             router.assign_modules(
                 [module], primary, model=mod_model,
-                temperature=temperature, max_tokens=max_tokens,
+                temperature=temperature, max_tokens=mt,
             )
         else:
             router.assign_modules(
                 [module], primary,
-                temperature=temperature, max_tokens=max_tokens,
+                temperature=temperature, max_tokens=mt,
             )
 
     return router

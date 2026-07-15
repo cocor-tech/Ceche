@@ -6,7 +6,10 @@ class NoOpAdapter(BaseAIAdapter):
     def model_name(self) -> str:
         return "none"
 
-    async def complete(self, prompt: str, system: str = "") -> AIResponse:
+    async def complete(
+        self, prompt: str, system: str = "",
+        max_tokens: int = 150, temperature: float = 0.1,
+    ) -> AIResponse:
         return AIResponse(content="", model="none")
 
     async def health_check(self) -> bool:

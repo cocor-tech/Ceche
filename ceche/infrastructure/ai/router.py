@@ -142,7 +142,10 @@ class ModelRouter:
         adapter = self._adapters.get(spec.provider)
         if adapter is None:
             return ""
-        resp = await adapter.complete(prompt, system=system)
+        resp = await adapter.complete(
+            prompt, system=system,
+            max_tokens=spec.max_tokens, temperature=spec.temperature,
+        )
         return resp.content
 
     @property

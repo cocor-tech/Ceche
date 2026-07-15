@@ -26,7 +26,10 @@ class AnthropicAdapter(BaseAIAdapter):
     def cost_per_1k_output(self) -> float:
         return 0.00125
 
-    async def complete(self, prompt: str, system: str = "") -> AIResponse:
+    async def complete(
+        self, prompt: str, system: str = "",
+        max_tokens: int = 150, temperature: float = 0.1,
+    ) -> AIResponse:
         headers = {
             "x-api-key": self._key,
             "anthropic-version": "2023-06-01",
@@ -34,8 +37,8 @@ class AnthropicAdapter(BaseAIAdapter):
         }
         payload: dict[str, Any] = {
             "model": self._model,
-            "max_tokens": 150,
-            "temperature": 0.1,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
             "system": system,
             "messages": [{"role": "user", "content": prompt}],
         }

@@ -39,7 +39,10 @@ class GenericAIAdapter(BaseAIAdapter):
     def cost_per_1k_output(self) -> float:
         return self._cost_out
 
-    async def complete(self, prompt: str, system: str = "") -> AIResponse:
+    async def complete(
+        self, prompt: str, system: str = "",
+        max_tokens: int = 150, temperature: float = 0.1,
+    ) -> AIResponse:
         headers = {
             "Authorization": f"Bearer {self._key}",
             "Content-Type": "application/json",
@@ -52,8 +55,8 @@ class GenericAIAdapter(BaseAIAdapter):
         payload: dict[str, Any] = {
             "model": self._model,
             "messages": messages,
-            "max_tokens": 150,
-            "temperature": 0.1,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
         }
 
         start = time.monotonic()
