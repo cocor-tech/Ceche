@@ -29,7 +29,7 @@ class M6Segmenter(BaseModule):
         sld_lower = sld.lower()
         words = _segment(sld_lower)
 
-        if words and len(words) >= 4 and self._ai:
+        if words and len(words) >= 3 and self._ai:
             words = await self._ai_disambiguate(sld_lower, words)
 
         if words is None:
