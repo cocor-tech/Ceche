@@ -43,17 +43,17 @@ class KeyManager:
         self, provider: str, key: str, label: str = "",
         expiry: str = "forever", created_by: str = "user",
     ) -> dict[str, Any]:
-        key_id = self._vault.store_key(key, provider, label, created_by)
         ttl = parse_expiry(expiry)
+        now = int(time.time())
+        expires_at = now + ttl if ttl else None
         ttl_str = str(ttl) if ttl else "forever"
-        self._vault._audit.log("key_store", created_by, key_id,
-                               {"provider": provider, "expiry": ttl_str})
+        key_id = self._vault.store_key(key, provider, label, created_by, expires_at=expires_at)
         return {
             "key_id": key_id,
             "provider": provider,
             "label": label,
             "expiry": ttl_str,
-            "created_at": int(time.time()),
+            "created_at": now,
         }
 
     def get_key(self, key_id: str) -> str | None:
@@ -81,15 +81,20 @@ class KeyManager:
 
     def get_active_key(self, provider: str) -> str | None:
         import sqlite3
+        now = int(time.time())
         conn = sqlite3.connect(self._vault._db_path)
         row = conn.execute(
-            "SELECT id FROM keys "
+            "SELECT id, expires_at FROM keys "
             "WHERE provider = ? AND revoked = 0 "
-            "ORDER BY created_at DESC LIMIT 1",
+            "ORDER BY rowid DESC LIMIT 1",
             (provider,),
         ).fetchone()
         conn.close()
         if row is None:
+            return None
+        expires = row[1]
+        if expires is not None and expires < now:
+            self._vault.revoke_key(row[0])
             return None
         return self._vault.get_key(row[0])
 

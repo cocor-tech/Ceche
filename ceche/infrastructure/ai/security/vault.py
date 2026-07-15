@@ -50,7 +50,8 @@ class CredentialVault:
                 encrypted_key TEXT NOT NULL,
                 created_at    INTEGER NOT NULL,
                 created_by    TEXT NOT NULL,
-                revoked       INTEGER DEFAULT 0
+                revoked       INTEGER DEFAULT 0,
+                expires_at    INTEGER
             )
         """)
         conn.execute(
@@ -60,15 +61,17 @@ class CredentialVault:
         conn.close()
 
     def store_key(
-        self, key: str, provider: str, label: str = "", created_by: str = "user"
+        self, key: str, provider: str, label: str = "", created_by: str = "user",
+        expires_at: int | None = None,
     ) -> str:
         key_id = str(uuid.uuid4())
         encrypted = self._encryption.encrypt(key)
         conn = sqlite3.connect(self._db_path)
         conn.execute(
-            "INSERT INTO keys (id, provider, label, encrypted_key, created_at, created_by) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            (key_id, provider, label, encrypted, int(time.time()), created_by),
+            "INSERT INTO keys "
+            "(id, provider, label, encrypted_key, created_at, created_by, expires_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (key_id, provider, label, encrypted, int(time.time()), created_by, expires_at),
         )
         conn.commit()
         conn.close()
