@@ -11,6 +11,7 @@ from rich.table import Table
 from ceche.config import Config
 from ceche.domain.result import AppraisalResult
 from ceche.engine import AppraisalEngine
+from ceche.infrastructure.ai.key_manager import KeyManager
 from ceche.infrastructure.ai.router import ModelRouter
 from ceche.infrastructure.authority.ahrefs_adapter import AhrefsDRAdapter
 from ceche.infrastructure.authority.opr_adapter import OPRAdapter
@@ -44,9 +45,22 @@ def _build_router(cfg: Config) -> ModelRouter | None:
         for env_key in env_keys:
             key = os.getenv(env_key)
             if key:
-                model = os.getenv(f"{provider_id.upper()}_MODEL")
-                router.register_provider(provider_id, key, model=model)
+                router.register_provider(
+                    provider_id, key,
+                    model=os.getenv(f"{provider_id.upper()}_MODEL"),
+                )
                 break
+
+    if not router.enabled:
+        km = KeyManager()
+        for provider_id in provider_keys:
+            if km.has_provider(provider_id):
+                key = km.get_active_key(provider_id)
+                if key:
+                    router.register_provider(
+                        provider_id, key,
+                        model=os.getenv(f"{provider_id.upper()}_MODEL"),
+                    )
 
     if not router.enabled:
         return None
@@ -106,6 +120,52 @@ def _build_engine(cfg: Config) -> AppraisalEngine:
         trademark=trademark, wayback=wayback,
         ahrefs=ahrefs, opr=opr, router=router,
     )
+
+
+ai_cmd = typer.Typer(help="AI key management")
+app.add_typer(ai_cmd, name="ai")
+
+
+@ai_cmd.command(name="key-add")
+def key_add(
+    provider: str = typer.Option(
+        ..., "--provider", "-p",
+        help="Provider: deepseek, openai, kimi, glm, minimax",
+    ),
+    key: str = typer.Option(..., "--key", "-k", help="API key"),
+    label: str = typer.Option("", "--label", "-l", help="Optional label"),
+    expiry: str = typer.Option("forever", "--expiry", "-e", help="24h, 7d, 30d, 365d, forever"),
+) -> None:
+    km = KeyManager()
+    result = km.add(provider.lower(), key, label, expiry)
+    kid = result["key_id"][:8]
+    console.print(
+        f"[green]Key stored:[/green] {kid}... ({result['provider']}) "
+        f"expires: {result['expiry']}"
+    )
+
+
+@ai_cmd.command(name="key-list")
+def key_list() -> None:
+    km = KeyManager()
+    keys = km.list_keys()
+    if not keys:
+        console.print("[dim]No keys stored.[/dim]")
+        return
+    for k in keys:
+        status = "[red]revoked[/red]" if k["revoked"] else "[green]active[/green]"
+        console.print(f"  {k['id'][:8]}... {k['provider']:12s} {k['label']:20s} {status}")
+
+
+@ai_cmd.command(name="key-remove")
+def key_remove(
+    key_id: str = typer.Argument(..., help="Key ID to remove"),
+) -> None:
+    km = KeyManager()
+    if km.remove(key_id):
+        console.print(f"[green]Key revoked:[/green] {key_id[:8]}...")
+    else:
+        console.print(f"[red]Key not found:[/red] {key_id[:8]}...")
 
 
 @app.command(name="appraise")
