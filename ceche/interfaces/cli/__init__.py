@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-from typing import Any
 
 import typer
 from rich.console import Console
@@ -12,10 +11,7 @@ from rich.table import Table
 from ceche.config import Config
 from ceche.domain.result import AppraisalResult
 from ceche.engine import AppraisalEngine
-from ceche.infrastructure.ai.adapters.base import BaseAIAdapter
-from ceche.infrastructure.ai.adapters.noop import NoOpAdapter
-from ceche.infrastructure.ai.adapters.ollama import OllamaAdapter
-from ceche.infrastructure.ai.adapters.openai import OpenAIAdapter
+from ceche.infrastructure.ai.router import ModelRouter
 from ceche.infrastructure.authority.ahrefs_adapter import AhrefsDRAdapter
 from ceche.infrastructure.authority.opr_adapter import OPRAdapter
 from ceche.infrastructure.authority.wayback_adapter import WaybackAdapter
@@ -30,23 +26,32 @@ app = typer.Typer(name="ceche", help="Domain Appraisal Engine")
 console = Console()
 
 
-def _build_ai(cfg: Config) -> BaseAIAdapter:
+def _build_router(cfg: Config) -> ModelRouter | None:
     import os
 
-    from ceche.infrastructure.ai.adapters.generic import detect_providers
+    router = ModelRouter()
 
-    openai_key = os.getenv("OPENAI_API_KEY")
-    if openai_key:
-        return OpenAIAdapter(openai_key)
+    provider_keys: dict[str, list[str]] = {
+        "openai": ["OPENAI_API_KEY"],
+        "deepseek": ["DEEPSEEK_API_KEY"],
+        "kimi": ["KIMI_API_KEY", "MOONSHOT_API_KEY"],
+        "glm": ["GLM_API_KEY", "ZHIPU_API_KEY"],
+        "minimax": ["MINIMAX_API_KEY"],
+        "openrouter": ["OPENROUTER_API_KEY"],
+    }
+    for provider_id, env_keys in provider_keys.items():
+        for env_key in env_keys:
+            key = os.getenv(env_key)
+            if key:
+                router.register_provider(provider_id, key)
+                break
 
-    providers = detect_providers()
-    if providers:
-        return providers[0]
+    if not router.enabled:
+        return None
 
-    try:
-        return OllamaAdapter()
-    except Exception:
-        return NoOpAdapter()
+    primary = router.providers[0]
+    router.assign_modules(["m6", "m8", "m11", "m16"], primary)
+    return router
 
 
 def _build_engine(cfg: Config) -> AppraisalEngine:
@@ -65,26 +70,16 @@ def _build_engine(cfg: Config) -> AppraisalEngine:
     if cfg.brave_key:
         search_backup = BraveAdapter(cfg.brave_key)
 
-    ai: BaseAIAdapter = NoOpAdapter()
+    router: ModelRouter | None = None
     import os
     if os.getenv("CECHE_AI_ENABLED", "").lower() in ("1", "true", "yes"):
-        ai = _build_ai(cfg)
-
-    class _AIPortAdapter:
-        def __init__(self, adapter: BaseAIAdapter) -> None:
-            self._adapter = adapter
-
-        async def complete(self, prompt: str) -> str:
-            resp = await self._adapter.complete(prompt)
-            return resp.content
-
-    ai_port: Any = _AIPortAdapter(ai)
+        router = _build_router(cfg)
 
     return AppraisalEngine(
         rdap=rdap, cache=cache, keyword=keyword,
         search=search, search_backup=search_backup,
         trademark=trademark, wayback=wayback,
-        ahrefs=ahrefs, opr=opr, ai=ai_port,
+        ahrefs=ahrefs, opr=opr, router=router,
     )
 
 

@@ -29,9 +29,19 @@ from ceche.domain.ports import (
     TrademarkPort,
 )
 from ceche.domain.result import AppraisalResult
+from ceche.infrastructure.ai.router import ModelRouter
 from ceche.infrastructure.authority.ahrefs_adapter import AhrefsDRAdapter
 from ceche.infrastructure.authority.opr_adapter import OPRAdapter
 from ceche.infrastructure.authority.wayback_adapter import WaybackAdapter
+
+
+class _ModuleAIPort(AIPort):
+    def __init__(self, router: ModelRouter, module_name: str) -> None:
+        self._router = router
+        self._name = module_name
+
+    async def complete(self, prompt: str) -> str:
+        return await self._router.complete(self._name, prompt)
 
 
 def _get(ctx: dict[str, Any], key: str, field: str = "") -> Any:
@@ -54,16 +64,21 @@ class AppraisalEngine:
         wayback: WaybackAdapter | None = None,
         ahrefs: AhrefsDRAdapter | None = None,
         opr: OPRAdapter | None = None,
-        ai: AIPort | None = None,
+        router: ModelRouter | None = None,
     ) -> None:
+        ai_m6 = _ModuleAIPort(router, "m6") if router else None
+        ai_m8 = _ModuleAIPort(router, "m8") if router else None
+        ai_m11 = _ModuleAIPort(router, "m11") if router else None
+        ai_m16 = _ModuleAIPort(router, "m16") if router else None
+
         self._m1 = M1RDAP(rdap, cache)
         self._m2 = M2TLDTable()
         self._m3 = M3Length()
         self._m4 = M4WordCount()
         self._m5 = M5Pronounceability()
-        self._m6 = M6Segmenter(ai)
+        self._m6 = M6Segmenter(ai_m6)
         self._m7 = M7KeywordPopularity(keyword) if keyword else None
-        self._m8 = M8CPC(ai=ai)
+        self._m8 = M8CPC(ai=ai_m8)
         self._m9: M9SearchResults | None
         if search:
             self._m9 = M9SearchResults(search, search_backup)
@@ -72,14 +87,14 @@ class AppraisalEngine:
         else:
             self._m9 = None
         self._m10 = M10CrossTLD(rdap)
-        self._m11 = M11Trademark(trademark, trademark_backup, ai=ai) if trademark else None
+        self._m11 = M11Trademark(trademark, trademark_backup, ai=ai_m11) if trademark else None
         self._m12 = (
             M12Authority(wayback=wayback, ahrefs=ahrefs, opr=opr)
             if wayback else None
         )
         self._m13 = M13Confidence()
         self._m15 = M15Pricing()
-        self._m16 = M16Brandability(ai=ai)
+        self._m16 = M16Brandability(ai=ai_m16)
 
     async def appraise(self, domain: str) -> AppraisalResult:
         ctx: dict[str, Any] = {}
