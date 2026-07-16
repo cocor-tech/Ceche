@@ -401,7 +401,7 @@ def _output_bulk_json(report: object) -> None:
     from ceche.bulk_engine import BulkReport
 
     if not isinstance(report, BulkReport):
-        console.print(json.dumps({"error": "invalid report type"}, indent=2))
+        sys.stdout.write(json.dumps({"error": "invalid report type"}, indent=2) + "\n")
         return
 
     results_out = []
@@ -438,4 +438,5 @@ def _output_bulk_json(report: object) -> None:
         "results": results_out,
         "failures": failures_out,
     }
-    console.print(json.dumps(output, indent=2, default=str))
+    text = json.dumps(output, indent=2, default=str)
+    sys.stdout.write(text + "\n")
