@@ -251,6 +251,59 @@ class AppraisalEngine:
         "m15_pricing", "m16_brandability",
     ]
 
+    def _module_exists(self, name: str) -> bool:
+        mapping: dict[str, bool] = {
+            "m1_rdap": True,
+            "m2_tld_table": True,
+            "m3_length": True,
+            "m4_word_count": True,
+            "m5_pronounceability": True,
+            "m6_segmenter": True,
+            "m7_keyword_popularity": self._m7 is not None,
+            "m8_cpc": True,
+            "m9_search_results": self._m9 is not None,
+            "m10_cross_tld": True,
+            "m11_trademark": self._m11 is not None,
+            "m12_authority": self._m12 is not None,
+            "m13_confidence": True,
+            "m15_pricing": True,
+            "m16_brandability": True,
+        }
+        return mapping.get(name, False)
+
+    def _skip_reason(self, name: str, ctx: dict[str, Any]) -> str:
+        m6_status: str | None = ctx.get("m6_status")
+        registered: bool = ctx.get("registered", True)
+        reasons: dict[str, str] = {
+            "m16_brandability": (
+                "M6 found a split \u2014 brandability not applicable"
+                if m6_status == "split_found"
+                else "Not applicable for this domain"
+            ),
+            "m7_keyword_popularity": (
+                "Brandable domain \u2014 keyword analysis not applicable"
+                if m6_status == "no_split"
+                else "Not applicable for this domain"
+            ),
+            "m8_cpc": (
+                "Brandable domain \u2014 CPC analysis not applicable"
+                if m6_status == "no_split"
+                else "Not applicable for this domain"
+            ),
+            "m9_search_results": "No search adapter configured",
+            "m11_trademark": (
+                "Brandable domain \u2014 trademark check not applicable"
+                if m6_status == "no_split"
+                else "Not applicable for this domain"
+            ),
+            "m12_authority": (
+                "Domain not registered"
+                if not registered
+                else "Not applicable for this domain"
+            ),
+        }
+        return reasons.get(name, "Not applicable for this domain type")
+
     def _module_breakdown(
         self,
         ctx: dict[str, Any],
@@ -259,10 +312,16 @@ class AppraisalEngine:
         for name in self._MODULE_NAMES:
             raw = ctx.get(f"result_{name}")
             if raw is None or not isinstance(raw, dict):
-                breakdown[name] = {
-                    "status": "UNAVAILABLE",
-                    "reason": "No adapter configured",
-                }
+                if self._module_exists(name):
+                    breakdown[name] = {
+                        "status": "SKIPPED",
+                        "reason": self._skip_reason(name, ctx),
+                    }
+                else:
+                    breakdown[name] = {
+                        "status": "UNAVAILABLE",
+                        "reason": "No adapter configured",
+                    }
                 continue
             entry = dict(raw)
             ms = entry.pop("_module_status", "")

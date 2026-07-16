@@ -349,6 +349,10 @@ def _resolve_domains(args: list[str]) -> list[str]:
 
 
 def _result_to_dict(r: AppraisalResult) -> dict[str, object]:
+    mod_summary: dict[str, int] = {}
+    for me in r.modules.values():
+        s = me.get("status", "UNKNOWN")
+        mod_summary[s] = mod_summary.get(s, 0) + 1
     return {
         "domain": r.domain,
         "estimated_value": r.estimated_value,
@@ -358,6 +362,7 @@ def _result_to_dict(r: AppraisalResult) -> dict[str, object]:
         "tld_score": r.tld_score,
         "weight_profile": r.weight_profile,
         "modules": r.modules,
+        "module_summary": mod_summary,
     }
 
 
@@ -385,6 +390,13 @@ def _build_unified_output(
     version = results[0].version if results else ""
     generated_at = results[0].generated_at if results else ""
     rate = succeeded / duration_seconds if duration_seconds > 0 and succeeded > 0 else 0.0
+
+    agg_mod_summary: dict[str, int] = {}
+    for r in results:
+        for me in r.modules.values():
+            s = me.get("status", "UNKNOWN")
+            agg_mod_summary[s] = agg_mod_summary.get(s, 0) + 1
+
     return {
         "version": version,
         "generated_at": generated_at,
@@ -395,6 +407,7 @@ def _build_unified_output(
             "duration_seconds": round(duration_seconds, 2),
             "rate_domains_per_second": round(rate, 2),
         },
+        "module_summary": agg_mod_summary,
         "results": [_result_to_dict(r) for r in results],
         "failures": [_failure_to_dict(f) for f in (failures or [])],
     }
@@ -444,6 +457,12 @@ def _output_bulk_json(report: object) -> None:
     results_out = [_result_to_dict(r) for r in report.results]
     failures_out = [_failure_to_dict(f) for f in report.failures]
 
+    agg_mod_summary: dict[str, int] = {}
+    for r in report.results:
+        for me in r.modules.values():
+            s = me.get("status", "UNKNOWN")
+            agg_mod_summary[s] = agg_mod_summary.get(s, 0) + 1
+
     output = {
         "version": report.results[0].version if report.results else "",
         "generated_at": report.results[0].generated_at if report.results else "",
@@ -454,6 +473,7 @@ def _output_bulk_json(report: object) -> None:
             "duration_seconds": report.summary.duration_seconds,
             "rate_domains_per_second": report.summary.rate_domains_per_second,
         },
+        "module_summary": agg_mod_summary,
         "results": results_out,
         "failures": failures_out,
     }
