@@ -35,7 +35,10 @@ from ceche.infrastructure.rdap.rdap_adapter import RDAPAdapter
 from ceche.infrastructure.search.brave_adapter import BraveAdapter
 from ceche.infrastructure.search.google_cse_adapter import GoogleCSEAdapter
 from ceche.infrastructure.trademark.uspto_adapter import USPTOAdapter
+from ceche.interfaces.cli.cache_cmd import cache_app
 from ceche.interfaces.cli.config_cmd import config_app
+from ceche.interfaces.cli.history_cmd import history_app
+from ceche.interfaces.cli.stats_cmd import stats_app
 from ceche.interfaces.output.engine import OutputEngine, OutputOptions
 
 app = typer.Typer(name="ceche", help="Domain Appraisal Engine")
@@ -149,6 +152,9 @@ def _build_engine(cfg: Config, rate_limiter: RateLimiter | None = None) -> Appra
 ai_cmd = typer.Typer(help="AI key management")
 app.add_typer(ai_cmd, name="ai")
 app.add_typer(config_app, name="config")
+app.add_typer(history_app, name="history")
+app.add_typer(stats_app, name="stats")
+app.add_typer(cache_app, name="cache")
 
 
 @ai_cmd.command(name="key-add")
@@ -244,6 +250,16 @@ def appraise_cmd(
         result = asyncio.run(engine.appraise(domain))
         results.append(result)
 
+
+    from ceche.infrastructure.persistence.store import AppraisalStore
+    try:
+        AppraisalStore().record_run(
+            all_domains, results, [],
+            fresh=fresh, command="appraise",
+        )
+    except Exception:
+        pass
+
     if fmt in ("json", "jsonl", "csv"):
         opts = _build_output_opts(fmt, output, min_value, max_value, tld,
                                   confidence, registered, unregistered,
@@ -325,6 +341,20 @@ def bulk_cmd(
         report = _run_with_progress(bulk, all_domains, concurrency)
     else:
         report = _run_with_text_progress(bulk, all_domains)
+
+
+    from ceche.infrastructure.persistence.store import AppraisalStore
+    try:
+        failures_dict = [{
+            "domain": f.domain, "error_type": f.error_type,
+            "error_message": f.error_message,
+        } for f in report.failures]
+        AppraisalStore().record_run(
+            all_domains, report.results, failures_dict,
+            fresh=fresh, command="bulk",
+        )
+    except Exception:
+        pass
 
     if fmt in ("json", "jsonl", "csv"):
         opts = _build_output_opts(fmt, output, min_value, max_value, tld,
