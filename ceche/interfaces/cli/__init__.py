@@ -33,6 +33,7 @@ from ceche.infrastructure.rdap.rdap_adapter import RDAPAdapter
 from ceche.infrastructure.search.brave_adapter import BraveAdapter
 from ceche.infrastructure.search.google_cse_adapter import GoogleCSEAdapter
 from ceche.infrastructure.trademark.uspto_adapter import USPTOAdapter
+from ceche.interfaces.cli.config_cmd import config_app
 
 app = typer.Typer(name="ceche", help="Domain Appraisal Engine")
 console = Console()
@@ -131,8 +132,7 @@ def _build_engine(cfg: Config, rate_limiter: RateLimiter | None = None) -> Appra
         search_backup = BraveAdapter(cfg.brave_key, client=b_client)
 
     router: ModelRouter | None = None
-    import os
-    if os.getenv("CECHE_AI_ENABLED", "").lower() in ("1", "true", "yes"):
+    if cfg.ai_enabled:
         router = _build_router(cfg, rate_limiter=rate_limiter)
 
     return AppraisalEngine(
@@ -145,6 +145,7 @@ def _build_engine(cfg: Config, rate_limiter: RateLimiter | None = None) -> Appra
 
 ai_cmd = typer.Typer(help="AI key management")
 app.add_typer(ai_cmd, name="ai")
+app.add_typer(config_app, name="config")
 
 
 @ai_cmd.command(name="key-add")
@@ -235,7 +236,7 @@ def bulk_cmd(
     ),
     concurrency: int = typer.Option(
         10, "--concurrency", "-c", min=1, max=100,
-        help="Max concurrent domains (default: 10)",
+        help="Max concurrent domains (default: 10 from config)",
     ),
     fresh: bool = typer.Option(
         False, "--fresh", "-f",
