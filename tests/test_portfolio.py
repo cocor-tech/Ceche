@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from ceche.infrastructure.portfolio.store import PortfolioStore
 
 
@@ -20,7 +22,7 @@ class TestPortfolioStore:
         store.create("test")
         try:
             store.create("test")
-            assert False, "should have raised"
+            pytest.fail("should have raised")
         except ValueError:
             pass
 

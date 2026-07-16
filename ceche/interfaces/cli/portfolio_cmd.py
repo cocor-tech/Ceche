@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from ceche.config import Config
+from ceche.domain.result import AppraisalResult
 from ceche.infrastructure.portfolio.store import PortfolioStore
 
 portfolio_app = typer.Typer(help="Manage domain portfolios")
@@ -146,8 +147,9 @@ def portfolio_appraise(
         return
 
     cfg = Config.load()
+    import contextlib
     if fresh:
-        with Path(cfg.cache_path).suppress(FileNotFoundError):
+        with contextlib.suppress(FileNotFoundError):
             Path(cfg.cache_path).unlink()
 
     from ceche.bulk_engine import BulkAppraisalEngine
@@ -296,10 +298,15 @@ def _resolve_domains_flat(args: list[str]) -> list[str]:
         else:
             domains.append(s)
     seen: set[str] = set()
-    return [d for d in domains if not (d in seen or seen.add(d))]
+    result: list[str] = []
+    for d in domains:
+        if d not in seen:
+            seen.add(d)
+            result.append(d)
+    return result
 
 
-def _r_to_dict(r: any) -> dict[str, object]:
+def _r_to_dict(r: AppraisalResult) -> dict[str, object]:
     mod_summary: dict[str, int] = {}
     for me in r.modules.values():
         s = me.get("status", "UNKNOWN")

@@ -38,6 +38,7 @@ from ceche.interfaces.cli.cache_cmd import cache_app
 from ceche.interfaces.cli.config_cmd import config_app
 from ceche.interfaces.cli.history_cmd import history_app
 from ceche.interfaces.cli.portfolio_cmd import portfolio_app
+from ceche.interfaces.cli.server_cmd import server_app
 from ceche.interfaces.cli.stats_cmd import stats_app
 from ceche.interfaces.output.engine import OutputEngine, OutputOptions
 
@@ -155,6 +156,7 @@ app.add_typer(cache_app, name="cache")
 app.add_typer(config_app, name="config")
 app.add_typer(history_app, name="history")
 app.add_typer(portfolio_app, name="portfolio")
+app.add_typer(server_app, name="server")
 app.add_typer(stats_app, name="stats")
 
 
