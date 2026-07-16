@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from ceche.domain.models import ModuleResult, ModuleStatus
@@ -145,6 +146,24 @@ _PROFILES = {
 _UNAVAILABLE_WEIGHT_ALIASES = frozenset({"m1_rdap", "m12_authority"})
 
 
+@dataclass
+class BreakdownEntry:
+    multiplier: float | None
+    weight: float | None
+    contribution: float | None
+    effect: str
+    impact: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "multiplier": self.multiplier,
+            "weight": self.weight,
+            "contribution": self.contribution,
+            "effect": self.effect,
+            "impact": round(self.impact, 1),
+        }
+
+
 def _lookup_tier(value: int, table: list[tuple[int, float]]) -> float:
     for threshold, amount in table:
         if value <= threshold:
@@ -236,7 +255,7 @@ class M15Pricing(BaseModule):
             normalized = {}
 
         value = base
-        breakdown: dict[str, float | None] = {}
+        breakdown: dict[str, BreakdownEntry | None] = {}
 
         for name, weight in normalized.items():
             mult_key = f"mult_{name}"
@@ -249,7 +268,20 @@ class M15Pricing(BaseModule):
                         float(mult) ** weight if mult >= 1.0 else float(mult)
                     )
                 value *= contribution
-                breakdown[name] = round(contribution, 4)
+                c = round(contribution, 4)
+                if c >= 1.0:
+                    effect = "boost"
+                    impact = (c - 1.0) * 100.0
+                else:
+                    effect = "penalty"
+                    impact = (1.0 - c) * 100.0
+                breakdown[name] = BreakdownEntry(
+                    multiplier=round(float(mult), 4),
+                    weight=round(weight, 4),
+                    contribution=c,
+                    effect=effect,
+                    impact=impact,
+                )
 
         for name in weights:
             if name not in breakdown:
@@ -263,6 +295,10 @@ class M15Pricing(BaseModule):
         low = value * (1.0 - factor)
         high = value * (1.0 + factor)
 
+        serialized_breakdown: dict[str, dict[str, Any] | None] = {}
+        for name, entry in breakdown.items():
+            serialized_breakdown[name] = entry.to_dict() if entry else None
+
         return ModuleResult(
             module_name=self.name,
             value=round(value, 2),
@@ -273,7 +309,7 @@ class M15Pricing(BaseModule):
                 "range": {"low": round(low, 2), "high": round(high, 2)},
                 "completeness_ratio": round(completeness, 2),
                 "weight_profile": weight_profile,
-                "breakdown": breakdown,
+                "breakdown": serialized_breakdown,
             },
             status=ModuleStatus.SUCCESS,
         )

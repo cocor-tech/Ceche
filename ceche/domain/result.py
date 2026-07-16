@@ -15,3 +15,5 @@ class AppraisalResult:
     tld_score: float | None
     weight_profile: str | None
     modules: dict[str, dict[str, Any]] = field(default_factory=dict)
+    version: str = ""
+    generated_at: str = ""

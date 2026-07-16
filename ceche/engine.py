@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
+import importlib.metadata
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, ClassVar
 
 from ceche.domain.models import ModuleStatus
 from ceche.domain.modules.m01_rdap import M1RDAP
@@ -207,6 +209,10 @@ class AppraisalEngine:
             tld_score=_get(ctx, "result_m2_tld_table", "tld_score"),
             weight_profile=ctx.get("weight_profile"),
             modules=self._module_breakdown(ctx),
+            version=importlib.metadata.version("ceche"),
+            generated_at=datetime.datetime.now(
+                datetime.timezone.utc
+            ).isoformat(),
         )
 
     def _ingest_single(self, ctx: dict[str, Any], result: Any, name: str) -> None:
@@ -237,21 +243,31 @@ class AppraisalEngine:
         except Exception:
             return None
 
+    _MODULE_NAMES: ClassVar[list[str]] = [
+        "m1_rdap", "m2_tld_table", "m3_length", "m4_word_count",
+        "m5_pronounceability", "m6_segmenter", "m7_keyword_popularity",
+        "m8_cpc", "m9_search_results", "m10_cross_tld",
+        "m11_trademark", "m12_authority", "m13_confidence",
+        "m15_pricing", "m16_brandability",
+    ]
+
     def _module_breakdown(
         self,
         ctx: dict[str, Any],
     ) -> dict[str, dict[str, Any]]:
         breakdown: dict[str, dict[str, Any]] = {}
-        for name in [
-            "m1_rdap", "m2_tld_table", "m3_length", "m4_word_count",
-            "m5_pronounceability", "m6_segmenter", "m7_keyword_popularity",
-            "m8_cpc", "m9_search_results", "m10_cross_tld",
-            "m11_trademark", "m12_authority", "m13_confidence",
-            "m15_pricing", "m16_brandability",
-        ]:
+        for name in self._MODULE_NAMES:
             raw = ctx.get(f"result_{name}")
-            if isinstance(raw, dict):
-                entry = dict(raw)
-                entry["status"] = str(raw.get("status"))
-                breakdown[name] = entry
+            if raw is None or not isinstance(raw, dict):
+                breakdown[name] = {
+                    "status": "UNAVAILABLE",
+                    "reason": "No adapter configured",
+                }
+                continue
+            entry = dict(raw)
+            ms = entry.pop("_module_status", "")
+            if name == "m6_segmenter" and "status" in entry:
+                entry["result"] = entry.pop("status")
+            entry["status"] = ms.replace("ModuleStatus.", "") if ms else ""
+            breakdown[name] = entry
         return breakdown

@@ -215,12 +215,13 @@ def appraise_cmd(
     results: list[AppraisalResult] = []
     for domain in all_domains:
         if not quiet:
-            console.print(f"[dim]Appraising [bold]{domain}[/bold]...[/dim]")
+            sys.stderr.write(f"Appraising {domain}...\n")
         result = asyncio.run(engine.appraise(domain))
         results.append(result)
 
     if fmt == "json":
-        _output_json(results, include_raw)
+        output = _build_unified_output(results)
+        sys.stdout.write(json.dumps(output, indent=2, default=str) + "\n")
     elif fmt == "table":
         _output_table(results)
     else:
@@ -347,20 +348,56 @@ def _resolve_domains(args: list[str]) -> list[str]:
     return result
 
 
-def _output_json(results: list[AppraisalResult], include_raw: bool) -> None:
-    output = []
-    for r in results:
-        entry: dict[str, object] = {
-            "domain": r.domain,
-            "estimated_value": r.estimated_value,
-            "range": {"low": r.range_low, "high": r.range_high},
-            "confidence": r.confidence,
-            "completeness_ratio": r.completeness_ratio,
-        }
-        if include_raw:
-            entry["modules"] = r.modules
-        output.append(entry)
-    console.print(json.dumps(output, indent=2, default=str))
+def _result_to_dict(r: AppraisalResult) -> dict[str, object]:
+    return {
+        "domain": r.domain,
+        "estimated_value": r.estimated_value,
+        "range": {"low": r.range_low, "high": r.range_high},
+        "confidence": r.confidence,
+        "completeness_ratio": r.completeness_ratio,
+        "tld_score": r.tld_score,
+        "weight_profile": r.weight_profile,
+        "modules": r.modules,
+    }
+
+
+def _failure_to_dict(f: object) -> dict[str, object]:
+    from ceche.bulk_engine import BulkFailure
+    if not isinstance(f, BulkFailure):
+        return {"domain": "", "error_type": "Unknown", "error_message": str(f)}
+    return {
+        "domain": f.domain,
+        "error_type": f.error_type,
+        "error_message": f.error_message,
+        "phase": f.phase,
+        "traceback": f.traceback_text,
+    }
+
+
+def _build_unified_output(
+    results: list[AppraisalResult],
+    failures: list[object] | None = None,
+    duration_seconds: float = 0.0,
+) -> dict[str, object]:
+    succeeded = len(results)
+    failed = len(failures) if failures else 0
+    total = succeeded + failed
+    version = results[0].version if results else ""
+    generated_at = results[0].generated_at if results else ""
+    rate = succeeded / duration_seconds if duration_seconds > 0 and succeeded > 0 else 0.0
+    return {
+        "version": version,
+        "generated_at": generated_at,
+        "summary": {
+            "total": total,
+            "succeeded": succeeded,
+            "failed": failed,
+            "duration_seconds": round(duration_seconds, 2),
+            "rate_domains_per_second": round(rate, 2),
+        },
+        "results": [_result_to_dict(r) for r in results],
+        "failures": [_failure_to_dict(f) for f in (failures or [])],
+    }
 
 
 def _output_table(results: list[AppraisalResult]) -> None:
@@ -404,30 +441,12 @@ def _output_bulk_json(report: object) -> None:
         sys.stdout.write(json.dumps({"error": "invalid report type"}, indent=2) + "\n")
         return
 
-    results_out = []
-    for r in report.results:
-        results_out.append({
-            "domain": r.domain,
-            "estimated_value": r.estimated_value,
-            "range": {"low": r.range_low, "high": r.range_high},
-            "confidence": r.confidence,
-            "completeness_ratio": r.completeness_ratio,
-            "tld_score": r.tld_score,
-            "weight_profile": r.weight_profile,
-            "modules": r.modules,
-        })
-
-    failures_out = []
-    for f in report.failures:
-        failures_out.append({
-            "domain": f.domain,
-            "error_type": f.error_type,
-            "error_message": f.error_message,
-            "phase": f.phase,
-            "traceback": f.traceback_text,
-        })
+    results_out = [_result_to_dict(r) for r in report.results]
+    failures_out = [_failure_to_dict(f) for f in report.failures]
 
     output = {
+        "version": report.results[0].version if report.results else "",
+        "generated_at": report.results[0].generated_at if report.results else "",
         "summary": {
             "total": report.summary.total,
             "succeeded": report.summary.succeeded,
@@ -438,5 +457,4 @@ def _output_bulk_json(report: object) -> None:
         "results": results_out,
         "failures": failures_out,
     }
-    text = json.dumps(output, indent=2, default=str)
-    sys.stdout.write(text + "\n")
+    sys.stdout.write(json.dumps(output, indent=2, default=str) + "\n")
