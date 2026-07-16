@@ -3,7 +3,9 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -34,6 +36,7 @@ from ceche.infrastructure.search.brave_adapter import BraveAdapter
 from ceche.infrastructure.search.google_cse_adapter import GoogleCSEAdapter
 from ceche.infrastructure.trademark.uspto_adapter import USPTOAdapter
 from ceche.interfaces.cli.config_cmd import config_app
+from ceche.interfaces.output.engine import OutputEngine, OutputOptions
 
 app = typer.Typer(name="ceche", help="Domain Appraisal Engine")
 console = Console()
@@ -194,17 +197,38 @@ def key_remove(
 def appraise_cmd(
     domains: list[str] = typer.Argument(..., help="Domain(s) to appraise or path to file"),
     fresh: bool = typer.Option(False, "--fresh", "-f", help="Bypass cache"),
-    fmt: str = typer.Option("pretty", "--format", help="Output format: json, table, pretty"),
-    include_raw: bool = typer.Option(False, "--include-raw", "-r", help="Include raw module data"),
+    fmt: str = typer.Option("pretty", "--format", "-F",
+                         help="Output format: json, jsonl, csv, table, pretty"),
+    output: str = typer.Option("", "--output", "-o",
+                            help="Write output to file"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress progress output"),
+    min_value: float | None = typer.Option(None, "--min-value", help="Minimum estimated value"),
+    max_value: float | None = typer.Option(None, "--max-value", help="Maximum estimated value"),
+    tld: str | None = typer.Option(None, "--tld", help="Filter by TLD (e.g. com, io)"),
+    confidence: str | None = typer.Option(None, "--confidence", help="Filter by confidence level"),
+    registered: bool | None = typer.Option(None, "--registered",
+        help="Only registered domains"),
+    unregistered: bool | None = typer.Option(None, "--unregistered",
+        help="Only unregistered domains"),
+    brandable: bool | None = typer.Option(None, "--brandable",
+        help="Only brandable (no_split) domains"),
+    keyword: bool | None = typer.Option(None, "--keyword",
+        help="Only keyword (split_found) domains"),
+    word_count: int | None = typer.Option(None, "--word-count", help="Filter by exact word count"),
+    min_age: float | None = typer.Option(None, "--min-age", help="Minimum domain age in years"),
+    max_age: float | None = typer.Option(None, "--max-age", help="Maximum domain age in years"),
+    sort: str | None = typer.Option(None, "--sort",
+        help="Sort by: value, name, tld, confidence, age, word_count"),
+    sort_order: str = typer.Option("asc", "--sort-order", help="asc or desc"),
+    limit: int | None = typer.Option(None, "--limit", help="Max results to show"),
+    skip: int | None = typer.Option(None, "--skip", help="Skip first N results"),
 ) -> None:
     cfg = Config.load()
     if fresh:
         cfg.fresh = True
         import contextlib
-        from pathlib import Path as _Path
         with contextlib.suppress(FileNotFoundError):
-            _Path(cfg.cache_path).unlink()
+            Path(cfg.cache_path).unlink()
 
     engine = _build_engine(cfg)
 
@@ -220,13 +244,28 @@ def appraise_cmd(
         result = asyncio.run(engine.appraise(domain))
         results.append(result)
 
-    if fmt == "json":
-        output = _build_unified_output(results)
-        sys.stdout.write(json.dumps(output, indent=2, default=str) + "\n")
+    if fmt in ("json", "jsonl", "csv"):
+        opts = _build_output_opts(fmt, output, min_value, max_value, tld,
+                                  confidence, registered, unregistered,
+                                  brandable, keyword, word_count,
+                                  min_age, max_age, sort, sort_order,
+                                  limit, skip)
+        eng = OutputEngine(results, opts)
+        eng.write()
     elif fmt == "table":
-        _output_table(results)
+        filtered = _filter_sorted(results, min_value, max_value, tld,
+                                  confidence, registered, unregistered,
+                                  brandable, keyword, word_count,
+                                  min_age, max_age, sort, sort_order,
+                                  limit, skip)
+        _output_table(filtered)
     else:
-        _output_pretty(results)
+        filtered = _filter_sorted(results, min_value, max_value, tld,
+                                  confidence, registered, unregistered,
+                                  brandable, keyword, word_count,
+                                  min_age, max_age, sort, sort_order,
+                                  limit, skip)
+        _output_pretty(filtered)
 
 
 @app.command(name="bulk")
@@ -242,6 +281,28 @@ def bulk_cmd(
         False, "--fresh", "-f",
         help="Force recheck — bypass all caches",
     ),
+    fmt: str = typer.Option("json", "--format", "-F", help="Output format: json, jsonl, csv"),
+    output: str = typer.Option("", "--output", "-o", help="Write output to file"),
+    min_value: float | None = typer.Option(None, "--min-value", help="Minimum estimated value"),
+    max_value: float | None = typer.Option(None, "--max-value", help="Maximum estimated value"),
+    tld: str | None = typer.Option(None, "--tld", help="Filter by TLD (e.g. com, io)"),
+    confidence: str | None = typer.Option(None, "--confidence", help="Filter by confidence level"),
+    registered: bool | None = typer.Option(None, "--registered",
+        help="Only registered domains"),
+    unregistered: bool | None = typer.Option(None, "--unregistered",
+        help="Only unregistered domains"),
+    brandable: bool | None = typer.Option(None, "--brandable",
+        help="Only brandable (no_split) domains"),
+    keyword: bool | None = typer.Option(None, "--keyword",
+        help="Only keyword (split_found) domains"),
+    word_count: int | None = typer.Option(None, "--word-count", help="Filter by exact word count"),
+    min_age: float | None = typer.Option(None, "--min-age", help="Minimum domain age in years"),
+    max_age: float | None = typer.Option(None, "--max-age", help="Maximum domain age in years"),
+    sort: str | None = typer.Option(None, "--sort",
+        help="Sort by: value, name, tld, confidence, age, word_count"),
+    sort_order: str = typer.Option("asc", "--sort-order", help="asc or desc"),
+    limit: int | None = typer.Option(None, "--limit", help="Max results to show"),
+    skip: int | None = typer.Option(None, "--skip", help="Skip first N results"),
 ) -> None:
     cfg = Config.load()
     if fresh:
@@ -265,7 +326,19 @@ def bulk_cmd(
     else:
         report = _run_with_text_progress(bulk, all_domains)
 
-    _output_bulk_json(report)
+    if fmt in ("json", "jsonl", "csv"):
+        opts = _build_output_opts(fmt, output, min_value, max_value, tld,
+                                  confidence, registered, unregistered,
+                                  brandable, keyword, word_count,
+                                  min_age, max_age, sort, sort_order,
+                                  limit, skip)
+        eng = OutputEngine(report.results, opts)
+        eng.write()
+    else:
+        out = _build_unified_output(
+        report.results, report.failures,
+        report.summary.duration_seconds)
+        sys.stdout.write(json.dumps(out, indent=2, default=str) + "\n")
 
     if report.summary.succeeded == 0:
         raise typer.Exit(code=1)
@@ -382,7 +455,7 @@ def _failure_to_dict(f: object) -> dict[str, object]:
 
 def _build_unified_output(
     results: list[AppraisalResult],
-    failures: list[object] | None = None,
+    failures: Sequence[object] | None = None,
     duration_seconds: float = 0.0,
 ) -> dict[str, object]:
     succeeded = len(results)
@@ -479,3 +552,52 @@ def _output_bulk_json(report: object) -> None:
         "failures": failures_out,
     }
     sys.stdout.write(json.dumps(output, indent=2, default=str) + "\n")
+
+
+def _build_output_opts(
+    fmt: str, output: str,
+    min_value: float | None, max_value: float | None,
+    tld: str | None, confidence: str | None,
+    registered: bool | None, unregistered: bool | None,
+    brandable: bool | None, keyword: bool | None,
+    word_count: int | None,
+    min_age: float | None, max_age: float | None,
+    sort: str | None, sort_order: str,
+    limit: int | None, skip: int | None,
+) -> OutputOptions:
+    return OutputOptions(
+        format=fmt, output=output,
+        min_value=min_value, max_value=max_value,
+        tld=tld, confidence=confidence,
+        registered=registered, unregistered=unregistered,
+        brandable=brandable, keyword=keyword,
+        word_count=word_count,
+        min_age=min_age, max_age=max_age,
+        sort=sort, sort_order=sort_order,
+        limit=limit, skip=skip,
+    )
+
+
+def _filter_sorted(
+    results: list[AppraisalResult],
+    min_value: float | None, max_value: float | None,
+    tld: str | None, confidence: str | None,
+    registered: bool | None, unregistered: bool | None,
+    brandable: bool | None, keyword: bool | None,
+    word_count: int | None,
+    min_age: float | None, max_age: float | None,
+    sort: str | None, sort_order: str,
+    limit: int | None, skip: int | None,
+) -> list[AppraisalResult]:
+    from ceche.interfaces.output.filters import FilterOptions, apply_filters
+    opts = FilterOptions(
+        min_value=min_value, max_value=max_value,
+        tld=tld, confidence=confidence,
+        registered=registered, unregistered=unregistered,
+        brandable=brandable, keyword=keyword,
+        word_count=word_count,
+        min_age=min_age, max_age=max_age,
+        sort=sort, sort_order=sort_order,
+        limit=limit, skip=skip,
+    )
+    return apply_filters(results, opts)
