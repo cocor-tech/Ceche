@@ -72,6 +72,10 @@ class AppraisalStore:
         self._db_path = db_path
         self._init_db()
 
+    @property
+    def db_path(self) -> str:
+        return self._db_path
+
     def _init_db(self) -> None:
         conn = sqlite3.connect(self._db_path)
         conn.executescript(_SCHEMA)

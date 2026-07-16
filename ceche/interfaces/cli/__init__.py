@@ -35,11 +35,20 @@ from ceche.infrastructure.search.brave_adapter import BraveAdapter
 from ceche.infrastructure.search.google_cse_adapter import GoogleCSEAdapter
 from ceche.infrastructure.trademark.uspto_adapter import USPTOAdapter
 from ceche.interfaces.cli.cache_cmd import cache_app
+from ceche.interfaces.cli.compare_cmd import compare_app
 from ceche.interfaces.cli.config_cmd import config_app
+from ceche.interfaces.cli.debug_cmd import debug_app
+from ceche.interfaces.cli.demo_cmd import demo_app
+from ceche.interfaces.cli.diff_cmd import diff_app
 from ceche.interfaces.cli.history_cmd import history_app
 from ceche.interfaces.cli.portfolio_cmd import portfolio_app
+from ceche.interfaces.cli.retry_cmd import retry_app
 from ceche.interfaces.cli.server_cmd import server_app
+from ceche.interfaces.cli.shell_cmd import shell_app
+from ceche.interfaces.cli.similar_cmd import similar_app
 from ceche.interfaces.cli.stats_cmd import stats_app
+from ceche.interfaces.cli.upgrade_cmd import upgrade_app
+from ceche.interfaces.cli.watch_cmd import watch_app
 from ceche.interfaces.output.engine import OutputEngine, OutputOptions
 
 app = typer.Typer(name="ceche", help="Domain Appraisal Engine")
@@ -153,11 +162,20 @@ def _build_engine(cfg: Config, rate_limiter: RateLimiter | None = None) -> Appra
 ai_cmd = typer.Typer(help="AI key management")
 app.add_typer(ai_cmd, name="ai")
 app.add_typer(cache_app, name="cache")
+app.add_typer(compare_app, name="compare")
 app.add_typer(config_app, name="config")
+app.add_typer(debug_app, name="debug")
+app.add_typer(demo_app, name="demo")
+app.add_typer(diff_app, name="diff")
 app.add_typer(history_app, name="history")
 app.add_typer(portfolio_app, name="portfolio")
+app.add_typer(retry_app, name="retry")
 app.add_typer(server_app, name="server")
+app.add_typer(shell_app, name="shell")
+app.add_typer(similar_app, name="similar")
 app.add_typer(stats_app, name="stats")
+app.add_typer(upgrade_app, name="upgrade")
+app.add_typer(watch_app, name="watch")
 
 
 @ai_cmd.command(name="key-add")
