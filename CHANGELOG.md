@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0 (2026-07-18)
+## 0.1.0 (2026-07-18)
 
 Full rewrite with enterprise-grade architecture.
 
