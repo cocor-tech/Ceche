@@ -48,6 +48,7 @@ from ceche.interfaces.cli.server_cmd import server_app
 from ceche.interfaces.cli.shell_cmd import shell_app
 from ceche.interfaces.cli.similar_cmd import similar_app
 from ceche.interfaces.cli.stats_cmd import stats_app
+from ceche.interfaces.cli.update_cmd import update_app
 from ceche.interfaces.cli.version_cmd import version_app
 from ceche.interfaces.cli.watch_cmd import watch_app
 from ceche.interfaces.output.engine import OutputEngine, OutputOptions
@@ -197,6 +198,7 @@ app.add_typer(server_app, name="server")
 app.add_typer(shell_app, name="shell")
 app.add_typer(similar_app, name="similar")
 app.add_typer(stats_app, name="stats")
+app.add_typer(update_app, name="update")
 app.add_typer(version_app, name="version")
 app.add_typer(watch_app, name="watch")
 
