@@ -132,6 +132,7 @@ class CecheTUI(App[None]):
 
     .result-scroll {
         height: 1fr;
+        overflow-y: auto;
     }
 
     InputArea {
@@ -147,6 +148,7 @@ class CecheTUI(App[None]):
     #loading {
         height: 3;
         content-align: center middle;
+        color: #00cc66;
     }
 
     #value-card {
@@ -559,6 +561,10 @@ class Sidebar(Vertical):
                 import typing
                 app: CecheTUI = typing.cast(CecheTUI, self.app)
                 app.load_session(run_id)
+        elif event.button.id == "history-btn":
+            import typing
+            app: CecheTUI = typing.cast(CecheTUI, self.app)
+            app.notify("Run: ceche history")
 
 
 class StatusBar(Static):
