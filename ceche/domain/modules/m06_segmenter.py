@@ -3,7 +3,11 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from wordfreq import word_frequency
+try:
+    from wordfreq import word_frequency
+except ImportError:
+    def word_frequency(word: str, lang: str) -> float:  # type: ignore[misc]
+        return 0.0
 
 from ceche.domain.models import ModuleResult, ModuleStatus
 from ceche.domain.modules.base import BaseModule

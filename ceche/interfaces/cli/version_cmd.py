@@ -27,8 +27,8 @@ def version_check() -> None:
             console.print("  Run [bold]ceche version upgrade[/bold] to update")
         else:
             console.print("  [green]Up to date.[/green]")
-    except Exception as e:
-        console.print(f"  [yellow]PyPI check failed:[/yellow] not published yet")
+    except Exception:
+        console.print("  [yellow]PyPI check failed:[/yellow] not published yet")
         console.print("  Check [bold]ceche --version[/bold] to see current version")
 
 

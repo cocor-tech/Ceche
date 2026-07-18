@@ -20,6 +20,30 @@ from ceche.config import Config
 from ceche.infrastructure.persistence.store import AppraisalStore
 
 
+class CecheCommandProvider(Provider):
+    """Command palette entries for Ceche TUI."""
+
+    async def search(self, query: str) -> list[Any]:  # type: ignore[override]
+        import typing
+        from textual.command import Hit
+
+        app = typing.cast(CecheTUI, self.app)
+        entries = [
+            ("Check domain", "Focus domain input", lambda: app.set_focus(app.query_one("#domain-input"))),
+            ("Toggle view", "Switch between modules and JSON", lambda: app.action_toggle_view()),
+            ("New domain", "Clear result and start over", lambda: app.action_new_domain()),
+            ("Quit", "Exit Ceche TUI", lambda: app.action_quit()),
+        ]
+
+        matches = []
+        for title, help_text, cmd in entries:
+            if query.lower() in title.lower() or query.lower() in help_text.lower():
+                matches.append(Hit(
+                    0, title, cmd, help=help_text,
+                ))
+        return matches
+
+
 class CecheTUI(App[None]):
     """Ceche Terminal User Interface."""
 
@@ -127,6 +151,8 @@ class CecheTUI(App[None]):
         padding: 0 1;
     }
     """
+
+    COMMANDS = {CecheCommandProvider}
 
     BINDINGS = [
         Binding("ctrl+q", "quit", "quit", show=True),
@@ -439,7 +465,8 @@ class Sidebar(Vertical):
                     name = domain if len(domain) <= 18 else domain[:15] + ".."
                     btn.label = f"{name}\n{val_str}"
                     btn.display = True
-                    setattr(btn, "session_id", run_id)
+                    btn.styles.opacity = 1.0
+                    btn._run_id = run_id  # type: ignore[attr-defined]
                 else:
                     btn.display = False
         except Exception:
@@ -447,7 +474,7 @@ class Sidebar(Vertical):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id and event.button.id.startswith("session-"):
-            run_id = getattr(event.button, "session_id", None)
+            run_id = getattr(event.button, "_run_id", None)
             if run_id:
                 import typing
                 app: CecheTUI = typing.cast(CecheTUI, self.app)
@@ -460,29 +487,3 @@ class StatusBar(Static):
             "  Ctrl+P commands  Tab toggle  Esc new domain  Ctrl+Q quit",
             id="status-bar",
         )
-
-
-class CecheCommandProvider(Provider):
-    """Command palette entries for Ceche TUI."""
-
-    async def search(self, query: str) -> list[Any]:  # type: ignore[override]
-        from textual.command import Hit
-
-        commands = [
-            ("Check domain", "check <domain>"),
-            ("View history", "ceche history"),
-            ("View stats", "ceche stats"),
-            ("Open portfolio", "ceche portfolio <name>"),
-            ("Configure", "ceche config set <key> <value>"),
-            ("Toggle view", "tab toggle modules/json"),
-            ("New domain", "escape clear result"),
-            ("Quit", "ctrl+q exit"),
-        ]
-
-        matches = []
-        for title, help_text in commands:
-            if query.lower() in title.lower() or query.lower() in help_text.lower():
-                matches.append(Hit(
-                    0, title, lambda: None, help=help_text,
-                ))
-        return matches
