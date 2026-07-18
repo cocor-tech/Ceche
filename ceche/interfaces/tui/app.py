@@ -27,7 +27,6 @@ class CecheCommandProvider(Provider):
     async def search(self, query: str) -> list[Any]:  # type: ignore[override]
         import typing
 
-        from textual.command import Hit
 
         app = typing.cast(CecheTUI, self.app)
         entries = [
@@ -97,6 +96,12 @@ class CecheTUI(App[None]):
     CSS = """
     Screen {
         layout: horizontal;
+    }
+
+    .main-column {
+        width: 1fr;
+        height: 100%;
+        layout: vertical;
     }
 
     Sidebar {
@@ -209,10 +214,11 @@ class CecheTUI(App[None]):
 
     def compose(self) -> ComposeResult:
         yield Sidebar()
-        yield ASCIISplash(id="banner")
-        yield ResultArea(classes="result-scroll")
-        yield InputArea()
-        yield StatusBar()
+        with Vertical(classes="main-column"):
+            yield ASCIISplash(id="banner")
+            yield ResultArea(classes="result-scroll")
+            yield InputArea()
+            yield StatusBar()
 
     def on_mount(self) -> None:
         self.theme = "textual-dark"
