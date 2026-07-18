@@ -112,10 +112,6 @@ class CecheTUI(App[None]):
         display: none;
     }
 
-    Sidebar.visible {
-        display: block;
-    }
-
     .sidebar-title {
         padding: 1;
         text-style: bold;
@@ -128,6 +124,11 @@ class CecheTUI(App[None]):
         padding: 1;
         color: #ffffff;
         text-style: bold;
+        display: none;
+    }
+
+    #banner.wide {
+        display: block;
     }
 
     .result-scroll {
@@ -139,10 +140,15 @@ class CecheTUI(App[None]):
         height: auto;
         padding: 0 2 1 2;
         dock: bottom;
+        border-top: solid #00cc66;
     }
 
-    #domain-input {
-        margin: 0 1;
+    Input {
+        border: solid #00cc66;
+    }
+
+    Input:focus {
+        border: solid #ffffff;
     }
 
     #loading {
@@ -190,10 +196,11 @@ class CecheTUI(App[None]):
 
     #status-bar {
         height: 1;
-        background: $surface;
-        color: $text-muted;
+        background: #1a1a2e;
+        color: #ffffff;
         padding: 0 1;
         dock: bottom;
+        border-top: solid #00cc66;
     }
     """
 
@@ -230,12 +237,19 @@ class CecheTUI(App[None]):
 
     def on_mount(self) -> None:
         self.theme = "textual-dark"
+        self._update_banner()
         self._update_sidebar_visibility()
         self.refresh_sidebar()
         self.query_one(InputArea).show_input()
 
     def on_resize(self, event: Any) -> None:
+        self._update_banner()
         self._update_sidebar_visibility()
+
+    def _update_banner(self) -> None:
+        wide = self.size.width >= 120
+        banner = self.query_one("#banner")
+        banner.display = wide
 
     def _update_sidebar_visibility(self) -> None:
         wide = self.size.width >= 120

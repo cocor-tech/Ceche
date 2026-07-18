@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ceche"
-version = "0.3.0"
+version = "0.3.1"
 description = "Domain Appraisal Engine — evaluate any domain across 16 dimensions"
 readme = "README.md"
 authors = [

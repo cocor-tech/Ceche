@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.1 (2026-07-18)
+
+### Fixed
+- ASCII banner now responsive — hides on narrow terminals (< 120 cols)
+- Status bar footer commands now visible with bright white text and green border
+- Input border color changed from default blue to green (#00cc66)
+- Input area separated from status bar with green top-border
+
+## 0.3.0 (2026-07-18)
+
+### Added
+- `ceche update` command — checks PyPI, prompts before upgrading
+
+## 0.2.0 (2026-07-18)
+
+### Changed
+- textual moved to core dependencies — `ceche start` works out of box
+- Green (#00cc66) primary theme, orange (#ff8800) headers, white banner
+
 ## 0.1.0 (2026-07-18)
 
 Full rewrite with enterprise-grade architecture.
