@@ -119,14 +119,14 @@ class CecheTUI(App[None]):
     .sidebar-title {
         padding: 1;
         text-style: bold;
-        color: #00cc66;
+        color: #ff8800;
     }
 
     #banner {
         height: 5;
         content-align: center middle;
         padding: 1;
-        color: #00cc66;
+        color: #ffffff;
         text-style: bold;
     }
 
@@ -153,6 +153,12 @@ class CecheTUI(App[None]):
         height: 5;
         padding: 1;
         background: $boost;
+    }
+
+    .value-header {
+        text-style: bold;
+        color: #ff8800;
+        padding: 0 1;
     }
 
     .value-amount {
@@ -440,7 +446,7 @@ class ResultArea(VerticalScroll):
         val_str = f"${val:,.0f}" if val else "--"
         range_str = f"${lo:,.0f} - ${hi:,.0f}" if lo and hi else "--"
 
-        card.mount(Static(f"[bold cyan]{domain}[/bold cyan]", id="card-domain"))
+        card.mount(Static(f"[bold #ff8800]{domain}[/bold #ff8800]", id="card-domain"))
         card.mount(Static(f"[bold green]{val_str}[/bold green]", classes="value-amount"))
         card.mount(Static(f"[dim]Range: {range_str}[/dim]", classes="value-range"))
         card.mount(Static(f"[dim]Confidence: {conf}[/dim]", classes="value-confidence"))
