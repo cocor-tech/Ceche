@@ -10,7 +10,7 @@ class WaybackAdapter:
         self._client = client or httpx.AsyncClient(timeout=15.0)
 
     async def get_snapshots(self, domain: str) -> dict[str, Any]:
-        url = f"http://web.archive.org/cdx/search/cdx?url={domain}&output=json&limit=100&fl=timestamp"
+        url = f"https://web.archive.org/cdx/search/cdx?url={domain}&output=json&limit=100&fl=timestamp"
         try:
             resp = await self._client.get(url)
         except httpx.RequestError:

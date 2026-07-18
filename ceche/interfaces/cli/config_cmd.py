@@ -45,10 +45,19 @@ def config_path() -> None:
 
 @config_app.command(name="set")
 def config_set(
-    key: str = typer.Argument(..., help="Config key"),
+    key: str = typer.Argument(..., help="Config key (e.g. concurrency, format, cache_enabled)"),
     value: str = typer.Argument(..., help="Config value"),
     global_: bool = typer.Option(False, "--global", "-g", help="Write to global config"),
 ) -> None:
+    _valid_keys = {
+        "concurrency", "format", "cache_enabled", "cache_path",
+        "fresh", "ai_enabled", "ai_temperature", "ai_max_tokens",
+        "google_cse_key", "google_cse_cx", "brave_key", "opr_key",
+    }
+    if key not in _valid_keys:
+        console.print(f"[red]Unknown key:[/red] '{key}'")
+        console.print(f"[dim]Valid keys:[/dim] {', '.join(sorted(_valid_keys))}")
+        raise typer.Exit(code=1)
     path = _STORE.set(key, value, global_=global_)
     console.print(f"[green]Set[/green] {key} = {value} in {path.name}")
 

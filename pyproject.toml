@@ -80,6 +80,7 @@ quote-style = "double"
 "tests/**" = ["ANN", "D", "S101", "ARG002", "E501", "F541"]
 "ceche/interfaces/**" = ["B008", "E501"]
 "ceche/infrastructure/ai/prompts/catalog.py" = ["E501"]
+"*.md" = ["E501"]
 "tests/security_audit.py" = ["E402", "F401"]
 
 [tool.mypy]

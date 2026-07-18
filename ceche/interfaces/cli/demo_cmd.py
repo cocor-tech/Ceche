@@ -29,7 +29,6 @@ def demo_run(
 
 
 def run_demo(count: int = 5, fmt: str = "pretty") -> None:
-    from typing import Any
 
     class _MockRDAP:
         async def lookup(self, domain): return {"_not_found": True}
@@ -70,7 +69,7 @@ def run_demo(count: int = 5, fmt: str = "pretty") -> None:
         r = asyncio.run(engine.appraise(d))
         results.append(r)
 
-    from ceche.interfaces.cli import _build_unified_output, _output_table, _output_pretty
+    from ceche.interfaces.cli import _build_unified_output, _output_pretty, _output_table
     if fmt == "json":
         out = _build_unified_output(results)
         console.print(json.dumps(out, indent=2, default=str))

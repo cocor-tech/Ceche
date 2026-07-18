@@ -25,6 +25,7 @@ class CecheCommandProvider(Provider):
 
     async def search(self, query: str) -> list[Any]:  # type: ignore[override]
         import typing
+
         from textual.command import Hit
 
         app = typing.cast(CecheTUI, self.app)

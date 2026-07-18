@@ -359,14 +359,17 @@ def check_cmd(
         results.append(result)
 
 
-    from ceche.infrastructure.persistence.store import AppraisalStore
+    import sys as _sys
+
     try:
-        AppraisalStore().record_run(
+        from ceche.infrastructure.persistence.store import AppraisalStore as _Store
+        _Store().record_run(
             all_domains, results, [],
             fresh=fresh, command="appraise",
         )
-    except Exception:
-        pass
+    except Exception as _e:
+        _sys.stderr.write(f"[ceche] warning: history save failed ({_e})\n")
+        _sys.stderr.flush()
 
     if fmt in ("json", "jsonl", "csv"):
         opts = _build_output_opts(fmt, output, min_value, max_value, tld,
@@ -451,18 +454,22 @@ def bulk_cmd(
         report = _run_with_text_progress(bulk, all_domains)
 
 
+    import sys as _sys
+
     from ceche.infrastructure.persistence.store import AppraisalStore
     try:
         failures_dict = [{
             "domain": f.domain, "error_type": f.error_type,
             "error_message": f.error_message,
         } for f in report.failures]
-        AppraisalStore().record_run(
+        from ceche.infrastructure.persistence.store import AppraisalStore as _Store
+        _Store().record_run(
             all_domains, report.results, failures_dict,
             fresh=fresh, command="bulk",
         )
-    except Exception:
-        pass
+    except Exception as _e:
+        _sys.stderr.write(f"[ceche] warning: history save failed ({_e})\n")
+        _sys.stderr.flush()
 
     if fmt in ("json", "jsonl", "csv"):
         opts = _build_output_opts(fmt, output, min_value, max_value, tld,

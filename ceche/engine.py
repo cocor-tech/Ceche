@@ -103,12 +103,17 @@ class AppraisalEngine:
         if fresh:
             ctx["_fresh"] = True
 
-        parts = domain.rsplit(".", 1)
-        sld = parts[0] if len(parts) == 2 else domain
+        import re as _re
+        cleaned = domain.strip().lower()
+        if not _re.match(r'^[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?)*\.[a-z]{2,}$', cleaned):
+            raise ValueError(f"Invalid domain: '{domain}' — must be a valid domain name (e.g. example.com)")
+
+        parts = cleaned.rsplit(".", 1)
+        sld = parts[0] if len(parts) == 2 else cleaned
         tld = parts[1] if len(parts) == 2 else ""
 
-        ctx["domain_name"] = domain.lower()
-        ctx["sld"] = sld.lower()
+        ctx["domain_name"] = cleaned
+        ctx["sld"] = sld
         ctx["tld"] = tld.lower().lstrip(".")
         domain_normalized = ctx["domain_name"]
 
@@ -241,6 +246,10 @@ class AppraisalEngine:
         try:
             return await coro
         except Exception:
+            import sys as _sys
+            import traceback as _tb
+            _sys.stderr.write(f"[engine] module error: {_tb.format_exc()}\n")
+            _sys.stderr.flush()
             return None
 
     _MODULE_NAMES: ClassVar[list[str]] = [
