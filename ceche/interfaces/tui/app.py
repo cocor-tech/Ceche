@@ -22,7 +22,7 @@ from ceche.infrastructure.persistence.store import AppraisalStore
 
 
 class CecheCommandProvider(Provider):
-    """Command palette entries for Ceche TUI."""
+    """Command palette with all Ceche commands."""
 
     async def search(self, query: str) -> list[Any]:  # type: ignore[override]
         import typing
@@ -31,18 +31,63 @@ class CecheCommandProvider(Provider):
 
         app = typing.cast(CecheTUI, self.app)
         entries = [
-            ("Check domain", "Focus domain input", lambda: app.set_focus(app.query_one("#domain-input"))),
-            ("Toggle view", "Switch between modules and JSON", lambda: app.action_toggle_view()),
-            ("New domain", "Clear result and start over", lambda: app.action_new_domain()),
-            ("Quit", "Exit Ceche TUI", lambda: app.action_quit()),
+            ("Check domain", lambda: app.action_focus_input()),
+            ("Bulk check", lambda: app.action_focus_input()),
+            ("View history", lambda: app.notify("Run: ceche history")),
+            ("View stats", lambda: app.notify("Run: ceche stats")),
+            ("List keys", lambda: app.notify("Run: ceche keys")),
+            ("Add key", lambda: app.notify("Run: ceche key-add")),
+            ("Remove key", lambda: app.notify("Run: ceche key-remove <id>")),
+            ("Show config", lambda: app.notify("Run: ceche config")),
+            ("Set config", lambda: app.notify("Run: ceche config set <key> <value>")),
+            ("Config path", lambda: app.notify("Run: ceche config path")),
+            ("Reset config", lambda: app.notify("Run: ceche config reset")),
+            ("Import config", lambda: app.notify("Run: ceche config import <file>")),
+            ("Export config", lambda: app.notify("Run: ceche config export <file>")),
+            ("List profiles", lambda: app.notify("Run: ceche profiles")),
+            ("Create profile", lambda: app.notify("Run: ceche profile-create <name>")),
+            ("Use profile", lambda: app.notify("Run: ceche profile-use <name>")),
+            ("Delete profile", lambda: app.notify("Run: ceche profile-delete <name>")),
+            ("List portfolios", lambda: app.notify("Run: ceche portfolio list")),
+            ("Create portfolio", lambda: app.notify("Run: ceche portfolio new <name>")),
+            ("Show portfolio", lambda: app.notify("Run: ceche portfolio show <name>")),
+            ("Delete portfolio", lambda: app.notify("Run: ceche portfolio remove <name>")),
+            ("Add to portfolio", lambda: app.notify("Run: ceche portfolio add <name> <domains>")),
+            ("Remove from portfolio", lambda: app.notify("Run: ceche portfolio remove <name> <domains>")),
+            ("Appraise portfolio", lambda: app.notify("Run: ceche portfolio check <name>")),
+            ("Portfolio value", lambda: app.notify("Run: ceche portfolio value <name>")),
+            ("Import portfolio", lambda: app.notify("Run: ceche portfolio import <name> <file>")),
+            ("Export portfolio", lambda: app.notify("Run: ceche portfolio export <name>")),
+            ("Tag domain", lambda: app.notify("Run: ceche portfolio tag <name> <domain> <tag>")),
+            ("Add note", lambda: app.notify("Run: ceche portfolio note <name> <domain> <text>")),
+            ("Search portfolios", lambda: app.notify("Run: ceche portfolio search <query>")),
+            ("Compare domains", lambda: app.notify("Run: ceche compare <d1> <d2>")),
+            ("Find similar", lambda: app.notify("Run: ceche similar <domain>")),
+            ("View diff", lambda: app.notify("Run: ceche diff <domain>")),
+            ("View cache", lambda: app.notify("Run: ceche cache")),
+            ("Clear cache", lambda: app.notify("Run: ceche cache clear")),
+            ("Cache stats", lambda: app.notify("Run: ceche cache stats")),
+            ("Set cache TTL", lambda: app.notify("Run: ceche cache ttl <seconds>")),
+            ("Debug domain", lambda: app.notify("Run: ceche debug <domain>")),
+            ("Run demo", lambda: app.notify("Run: ceche demo")),
+            ("Retry run", lambda: app.notify("Run: ceche retry <run-id>")),
+            ("Start server", lambda: app.notify("Run: ceche server serve")),
+            ("Open web", lambda: app.notify("Run: ceche server web")),
+            ("Watch file", lambda: app.notify("Run: ceche watch <file>")),
+            ("Version", lambda: app.notify("ceche v0.2.0")),
+            ("Check version", lambda: app.notify("Run: ceche version check")),
+            ("Upgrade", lambda: app.notify("Run: ceche version upgrade")),
+            ("Shell completions", lambda: app.notify("Run: ceche shell <bash|zsh|fish>")),
+            ("Toggle view", lambda: app.action_toggle_view()),
+            ("New domain", lambda: app.action_new_domain()),
+            ("Quit", lambda: app.action_quit()),
         ]
 
         matches = []
-        for title, help_text, cmd in entries:
-            if query.lower() in title.lower() or query.lower() in help_text.lower():
-                matches.append(Hit(
-                    0, title, cmd, help=help_text,
-                ))
+        for title, cmd in entries:
+            if query.lower() in title.lower():
+                from textual.command import Hit as _H
+                matches.append(_H(0, title, cmd, help=title))
         return matches
 
 
@@ -58,7 +103,7 @@ class CecheTUI(App[None]):
         width: 24;
         height: 100%;
         background: $panel;
-        border-right: solid $primary;
+        border-right: solid #00cc66;
         display: none;
     }
 
@@ -69,50 +114,29 @@ class CecheTUI(App[None]):
     .sidebar-title {
         padding: 1;
         text-style: bold;
-        color: $primary;
+        color: #00cc66;
     }
 
-    .sidebar-entry {
-        padding: 0 1;
-        height: 3;
-    }
-
-    .sidebar-entry:hover {
-        background: $accent 20%;
-    }
-
-    .sidebar-entry .domain {
-        text-style: bold;
-    }
-
-    .sidebar-entry .value {
-        color: $success;
-    }
-
-    MainContent {
-        width: 1fr;
-        height: 100%;
-    }
-
-    #logo {
+    #banner {
+        height: 5;
         content-align: center middle;
-        padding: 2;
+        padding: 1;
+        color: #00cc66;
         text-style: bold;
-        color: $primary;
     }
 
-    #input-area {
-        padding: 0 2;
+    .result-scroll {
+        height: 1fr;
+    }
+
+    InputArea {
         height: auto;
+        padding: 0 2 1 2;
+        dock: bottom;
     }
 
     #domain-input {
         margin: 0 1;
-    }
-
-    #result-area {
-        padding: 1 2;
-        height: auto;
     }
 
     #loading {
@@ -156,6 +180,7 @@ class CecheTUI(App[None]):
         background: $surface;
         color: $text-muted;
         padding: 0 1;
+        dock: bottom;
     }
     """
 
@@ -183,16 +208,17 @@ class CecheTUI(App[None]):
         self._view_mode: str = "modules"  # modules or json
 
     def compose(self) -> ComposeResult:
-        yield Sidebar(classes="visible" if self.sidebar_visible else "")
-        with Vertical(id="main-content"):
-            yield Logo()
-            yield InputArea()
-            yield ResultArea()
-            yield StatusBar()
+        yield Sidebar()
+        yield ASCIISplash(id="banner")
+        yield ResultArea(classes="result-scroll")
+        yield InputArea()
+        yield StatusBar()
 
     def on_mount(self) -> None:
+        self.theme = "textual-dark"
         self._update_sidebar_visibility()
         self.refresh_sidebar()
+        self.query_one(InputArea).show_input()
 
     def on_resize(self, event: Any) -> None:
         self._update_sidebar_visibility()
@@ -201,7 +227,7 @@ class CecheTUI(App[None]):
         wide = self.size.width >= 120
         self.sidebar_visible = wide
         sidebar = self.query_one(Sidebar)
-        sidebar.set_class(wide, "visible")
+        sidebar.display = wide
 
     def refresh_sidebar(self) -> None:
         sidebar = self.query_one(Sidebar)
@@ -260,6 +286,9 @@ class CecheTUI(App[None]):
         result_area = self.query_one(ResultArea)
         result_area.show_result(self._current_result)
 
+    async def action_focus_input(self) -> None:
+        self.query_one(InputArea).show_input()
+
     async def action_scroll_down(self) -> None:
         area = self.query_one(ResultArea)
         area.scroll_to(y=area.scroll_y + 2.0)
@@ -316,19 +345,33 @@ class CecheTUI(App[None]):
 
 
 class Logo(Static):
+    pass
+
+
+class ASCIISplash(Static):
+    """ASCII banner displayed at the top."""
+
     def compose(self) -> ComposeResult:
-        yield Static("⚡ ceche", id="logo")
+        yield Static(
+            "  ██████████    ████████  ████████  ██    ██  ████████\n"
+            "  ██           ██     ██ ██     ██ ██    ██ ██\n"
+            "  ██████       ████████  ████████  ██    ██ ███████\n"
+            "  ██           ██   ██   ██   ██   ██    ██      ██\n"
+            "  ██           ██    ██  ██    ██   ██████  ████████\n"
+            "                        v0.2.0",
+            id="banner",
+        )
 
 
 class InputArea(Vertical):
-    """Domain input area that transforms into a button after appraisal."""
+    """Domain input area at the bottom."""
 
     def compose(self) -> ComposeResult:
         self._input = Input(
             placeholder="Enter domain (e.g. example.com)",
             id="domain-input",
         )
-        self._button = Button("✓ Check new domain", id="new-domain-btn", variant="primary")
+        self._button = Button("Check new domain", id="new-domain-btn", variant="primary")
         self._button.display = False
         self._spinner = LoadingIndicator(id="loading")
         self._spinner.display = False
