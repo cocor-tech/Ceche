@@ -204,7 +204,7 @@ def start_tui(
         import textual  # noqa: F401
     except ImportError:
         console.print("[red]Textual is required for the TUI.[/red]")
-        console.print("Install: [bold]pip install textual[/bold]")
+        console.print("Install: [bold]pip install ceche[tui][/bold]")
         raise typer.Exit(code=1)
 
     from ceche.interfaces.tui.app import CecheTUI
