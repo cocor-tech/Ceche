@@ -4,7 +4,6 @@ import json
 
 import typer
 from rich.console import Console
-from rich.table import Table
 
 from ceche.infrastructure.persistence.store import AppraisalStore
 
@@ -13,32 +12,30 @@ console = Console()
 _store = AppraisalStore()
 
 
-@history_app.command(name="list")
-def history_list(
-    days: int = typer.Option(30, "--days", "-d", help="Days of history to show"),
+@history_app.callback(invoke_without_command=True)
+def history_main(
+    days: int = typer.Option(30, "--days", "-d", help="Days of history"),
     domain: str = typer.Option("", "--domain", help="Filter by domain"),
-    fmt: str = typer.Option("table", "--format", "-F", help="Output format: table, json"),
+    fmt: str = typer.Option("table", "--format", "-F", help="Output: table, json"),
 ) -> None:
     if domain:
         entries = _store.get_domain_history(domain, days=days)
-        if fmt == "json":
-            console.print(json.dumps(entries, indent=2, default=str))
-        else:
+    else:
+        entries = _store.list_runs(days=days)
+    if fmt == "json":
+        console.print(json.dumps(entries, indent=2, default=str))
+    else:
+        from rich.table import Table
+        if domain:
             table = Table(title=f"History for {domain}")
             table.add_column("Date", style="dim")
             table.add_column("Value", justify="right", style="green")
             table.add_column("Confidence")
             for e in entries:
-                dt = e.get("created_at", "")
                 val = f"${e['estimated_value']:,.0f}" if e.get("estimated_value") else "--"
-                table.add_row(str(dt), val, e.get("confidence", "--"))
-            console.print(table)
-    else:
-        runs = _store.list_runs(days=days)
-        if fmt == "json":
-            console.print(json.dumps(runs, indent=2, default=str))
+                table.add_row(str(e.get("created_at", "")), val, e.get("confidence", "--"))
         else:
-            table = Table(title=f"Runs (last {days}d)")
+            table = Table(title=f"Appraisal Runs (last {days}d)")
             table.add_column("Run ID", style="cyan")
             table.add_column("Date")
             table.add_column("Total")
@@ -46,7 +43,7 @@ def history_list(
             table.add_column("Failed")
             table.add_column("Command")
             table.add_column("Fresh")
-            for r in runs:
+            for r in entries:
                 table.add_row(
                     r.get("id", "")[:8] + "...",
                     str(r.get("started_at", "")),
@@ -56,7 +53,7 @@ def history_list(
                     r.get("command", ""),
                     "[green]yes[/green]" if r.get("fresh") else "",
                 )
-            console.print(table)
+        console.print(table)
 
 
 @history_app.command(name="export")
@@ -70,7 +67,7 @@ def history_export(
 
 @history_app.command(name="clear")
 def history_clear(
-    days: int | None = typer.Option(None, "--days", "-d", help="Clear history older than N days"),
+    days: int | None = typer.Option(None, "--days", "-d", help="Clear older than N days"),
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
 ) -> None:
     if not force:

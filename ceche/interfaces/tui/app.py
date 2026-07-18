@@ -172,6 +172,44 @@ class CecheTUI(App[None]):
         sidebar = self.query_one(Sidebar)
         sidebar.refresh_entries()
 
+    def load_session(self, run_id: str) -> None:
+        try:
+            import sqlite3
+            conn = sqlite3.connect(self._store.db_path)
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT * FROM appraisals WHERE run_id = ? "
+                "ORDER BY created_at DESC LIMIT 1",
+                (run_id,),
+            ).fetchall()
+            conn.close()
+            if not rows:
+                return
+            row = dict(rows[0])
+            modules = {}
+            if row.get("modules_json"):
+                import json as _json
+                modules = _json.loads(row["modules_json"])
+            data = {
+                "domain": row.get("domain", "unknown"),
+                "estimated_value": row.get("estimated_value"),
+                "range_low": row.get("range_low"),
+                "range_high": row.get("range_high"),
+                "confidence": row.get("confidence"),
+                "completeness_ratio": row.get("completeness"),
+                "tld_score": row.get("tld_score"),
+                "weight_profile": row.get("weight_profile"),
+                "modules": modules,
+            }
+            self._current_result = data
+            self._view_mode = "modules"
+            input_area = self.query_one(InputArea)
+            result_area = self.query_one(ResultArea)
+            input_area.show_button()
+            result_area.show_result(data)
+        except Exception:
+            pass
+
     async def action_new_domain(self) -> None:
         self._current_result = None
         self._view_mode = "modules"
@@ -232,9 +270,6 @@ class CecheTUI(App[None]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "new-domain-btn":
             asyncio.create_task(self.action_new_domain())
-
-    def on_sidebar_sessions_changed(self) -> None:
-        self.refresh_sidebar()
 
 
 class Logo(Static):
@@ -367,11 +402,10 @@ class Sidebar(Vertical):
 
     def compose(self) -> ComposeResult:
         yield Static("Recent", classes="sidebar-title")
-        self._entries: list[Static] = []
-        for _ in range(4):
-            entry = Static("", classes="sidebar-entry")
-            self._entries.append(entry)
-            yield entry
+        for i in range(4):
+            btn = Button("", id=f"session-{i}", variant="default")
+            btn.display = False
+            yield btn
         yield Button("View full history", id="history-btn")
 
     def refresh_entries(self) -> None:
@@ -382,7 +416,7 @@ class Sidebar(Vertical):
             return
         try:
             runs = store.list_runs(days=7)
-            domains: list[tuple[str, float | None]] = []
+            domains: list[tuple[str, float | None, str]] = []
             for run in runs[:4]:
                 import sqlite3
                 conn = sqlite3.connect(store.db_path)
@@ -393,20 +427,31 @@ class Sidebar(Vertical):
                         (run["id"],),
                     ).fetchall()
                     for d, v in apps:
-                        domains.append((d.strip().lower(), v))
+                        domains.append((d.strip().lower(), v, run["id"]))
                 finally:
                     conn.close()
 
-            for i, (domain, val) in enumerate(domains[:4]):
-                val_str = f"${val:,.0f}" if val else "--"
-                name = domain if len(domain) <= 18 else domain[:15] + ".."
-                self._entries[i].update(
-                    f"[bold]{name}[/bold]\n[green]{val_str}[/green]"
-                )
-            for i in range(len(domains), 4):
-                self._entries[i].update("")
+            for i in range(4):
+                btn = self.query_one(f"#session-{i}", Button)
+                if i < len(domains):
+                    domain, val, run_id = domains[i]
+                    val_str = f"${val:,.0f}" if val else "--"
+                    name = domain if len(domain) <= 18 else domain[:15] + ".."
+                    btn.label = f"{name}\n{val_str}"
+                    btn.display = True
+                    setattr(btn, "session_id", run_id)
+                else:
+                    btn.display = False
         except Exception:
             pass
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id and event.button.id.startswith("session-"):
+            run_id = getattr(event.button, "session_id", None)
+            if run_id:
+                import typing
+                app: CecheTUI = typing.cast(CecheTUI, self.app)
+                app.load_session(run_id)
 
 
 class StatusBar(Static):
@@ -422,7 +467,6 @@ class CecheCommandProvider(Provider):
 
     async def search(self, query: str) -> list[Any]:  # type: ignore[override]
         from textual.command import Hit
-        from textual.widgets import Static as _S
 
         commands = [
             ("Check domain", "check <domain>"),

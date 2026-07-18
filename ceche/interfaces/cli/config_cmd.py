@@ -18,8 +18,8 @@ _STORE = ConfigStore()
 _LOADER = ConfigLoader()
 
 
-@config_app.command(name="show")
-def config_show(
+@config_app.callback(invoke_without_command=True)
+def config_main(
     fmt: str = typer.Option("table", "--format", "-F", help="Output format: table, json"),
 ) -> None:
     cfg = _LOADER.load()

@@ -12,7 +12,6 @@ def server_serve(
     port: int = typer.Option(8080, "--port", "-p", help="Port to listen on"),
     host: str = typer.Option("127.0.0.1", "--host", "-H", help="Host to bind to"),
 ) -> None:
-    """Start the Ceche HTTP API server."""
     import uvicorn
 
     from ceche.interfaces.api import create_app
@@ -28,7 +27,6 @@ def server_web(
     port: int = typer.Option(8080, "--port", "-p", help="Port to listen on"),
     host: str = typer.Option("127.0.0.1", "--host", "-H", help="Host to bind to"),
 ) -> None:
-    """Start server and open web dashboard."""
     import threading
 
     import uvicorn
@@ -56,7 +54,6 @@ def server_web(
 def server_tui(
     port: int = typer.Option(8080, "--port", "-p", help="Port to listen on"),
 ) -> None:
-    """Start a headless API server (no dashboard)."""
     import uvicorn
 
     from ceche.interfaces.api import create_app

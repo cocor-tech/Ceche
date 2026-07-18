@@ -47,7 +47,7 @@ from ceche.interfaces.cli.server_cmd import server_app
 from ceche.interfaces.cli.shell_cmd import shell_app
 from ceche.interfaces.cli.similar_cmd import similar_app
 from ceche.interfaces.cli.stats_cmd import stats_app
-from ceche.interfaces.cli.upgrade_cmd import upgrade_app
+from ceche.interfaces.cli.version_cmd import version_app
 from ceche.interfaces.cli.watch_cmd import watch_app
 from ceche.interfaces.output.engine import OutputEngine, OutputOptions
 
@@ -191,7 +191,7 @@ app.add_typer(server_app, name="server")
 app.add_typer(shell_app, name="shell")
 app.add_typer(similar_app, name="similar")
 app.add_typer(stats_app, name="stats")
-app.add_typer(upgrade_app, name="upgrade")
+app.add_typer(version_app, name="version")
 app.add_typer(watch_app, name="watch")
 
 
@@ -426,6 +426,40 @@ def bulk_cmd(
 
     if report.summary.succeeded == 0:
         raise typer.Exit(code=1)
+
+
+# Backward-compatible alias: ceche appraise → ceche check
+@app.command(name="appraise", hidden=True)
+def _alias_appraise(
+    domains: list[str] = typer.Argument(..., help="Domain(s) to appraise or path to file"),
+    fresh: bool = typer.Option(False, "--fresh", "-f", help="Bypass cache"),
+    fmt: str = typer.Option("pretty", "--format", "-F",
+                         help="Output format: json, jsonl, csv, table, pretty"),
+    output: str = typer.Option("", "--output", "-o",
+                            help="Write output to file"),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress progress output"),
+    min_value: float | None = typer.Option(None, "--min-value", help="Minimum estimated value"),
+    max_value: float | None = typer.Option(None, "--max-value", help="Maximum estimated value"),
+    tld: str | None = typer.Option(None, "--tld", help="Filter by TLD"),
+    confidence: str | None = typer.Option(None, "--confidence", help="Filter by confidence level"),
+    registered: bool | None = typer.Option(None, "--registered", help="Only registered domains"),
+    unregistered: bool | None = typer.Option(None, "--unregistered", help="Only unregistered domains"),
+    brandable: bool | None = typer.Option(None, "--brandable", help="Only brandable domains"),
+    keyword: bool | None = typer.Option(None, "--keyword", help="Only keyword domains"),
+    word_count: int | None = typer.Option(None, "--word-count", help="Filter by word count"),
+    min_age: float | None = typer.Option(None, "--min-age", help="Minimum domain age"),
+    max_age: float | None = typer.Option(None, "--max-age", help="Maximum domain age"),
+    sort: str | None = typer.Option(None, "--sort", help="Sort by: value, name, tld, confidence"),
+    sort_order: str = typer.Option("asc", "--sort-order", help="asc or desc"),
+    limit: int | None = typer.Option(None, "--limit", help="Max results"),
+    skip: int | None = typer.Option(None, "--skip", help="Skip results"),
+) -> None:
+    check_cmd(
+        domains, fresh, fmt, output, quiet,
+        min_value, max_value, tld, confidence, registered, unregistered,
+        brandable, keyword, word_count, min_age, max_age,
+        sort, sort_order, limit, skip,
+    )
 
 
 def _run_with_progress(

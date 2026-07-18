@@ -12,8 +12,8 @@ cache_app = typer.Typer(help="Manage Ceche cache")
 console = Console()
 
 
-@cache_app.command(name="show")
-def cache_show() -> None:
+@cache_app.callback(invoke_without_command=True)
+def cache_main() -> None:
     cfg = Config.load()
     cache_path = Path(cfg.cache_path)
     if cache_path.is_file():

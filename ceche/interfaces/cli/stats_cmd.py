@@ -8,13 +8,13 @@ from rich.table import Table
 
 from ceche.infrastructure.persistence.store import AppraisalStore
 
-stats_app = typer.Typer(help="View usage statistics")
+stats_app = typer.Typer(help="View usage statistics", invoke_without_command=True)
 console = Console()
 _store = AppraisalStore()
 
 
-@stats_app.command(name="show")
-def stats_show(
+@stats_app.callback()
+def stats_callback(
     days: int = typer.Option(30, "--days", "-d", help="Days of stats"),
     fmt: str = typer.Option("table", "--format", "-F", help="Output: table, json"),
 ) -> None:
