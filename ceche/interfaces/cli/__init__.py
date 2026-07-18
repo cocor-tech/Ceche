@@ -254,13 +254,6 @@ def start_tui(
     fresh: bool = typer.Option(False, "--fresh", "-f", help="Bypass cache on startup"),
 ) -> None:
     """Launch the Ceche terminal user interface"""
-    try:
-        import textual  # noqa: F401
-    except ImportError:
-        console.print("[red]Textual is required for the TUI.[/red]")
-        console.print("Install: [bold]pip install ceche[tui][/bold]")
-        raise typer.Exit(code=1)
-
     from ceche.interfaces.tui.app import CecheTUI
     CecheTUI(fresh=fresh).run()
 
