@@ -57,7 +57,6 @@ console = Console()
 
 @app.callback(invoke_without_command=True)
 def _version_callback(
-    ctx: typer.Context,
     version: bool = typer.Option(
         False, "--version", "-V", help="Show version and exit",
         is_eager=True,
@@ -71,8 +70,6 @@ def _version_callback(
             v = "unknown"
         console.print(f"ceche v{v}")
         raise typer.Exit()
-    console.print(ctx.get_help())
-    raise typer.Exit()
 
 
 def _build_router(cfg: Config, rate_limiter: RateLimiter | None = None) -> ModelRouter | None:
@@ -198,6 +195,22 @@ app.add_typer(upgrade_app, name="upgrade")
 app.add_typer(watch_app, name="watch")
 
 
+@app.command(name="start")
+def start_tui(
+    fresh: bool = typer.Option(False, "--fresh", "-f", help="Bypass cache on startup"),
+) -> None:
+    """Launch the Ceche terminal user interface"""
+    try:
+        import textual  # noqa: F401
+    except ImportError:
+        console.print("[red]Textual is required for the TUI.[/red]")
+        console.print("Install: [bold]pip install textual[/bold]")
+        raise typer.Exit(code=1)
+
+    from ceche.interfaces.tui.app import CecheTUI
+    CecheTUI(fresh=fresh).run()
+
+
 @ai_cmd.command(name="key-add")
 def key_add(
     provider: str = typer.Option(
@@ -240,8 +253,8 @@ def key_remove(
         console.print(f"[red]Key not found:[/red] {key_id[:8]}...")
 
 
-@app.command(name="appraise")
-def appraise_cmd(
+@app.command(name="check")
+def check_cmd(
     domains: list[str] = typer.Argument(..., help="Domain(s) to appraise or path to file"),
     fresh: bool = typer.Option(False, "--fresh", "-f", help="Bypass cache"),
     fmt: str = typer.Option("pretty", "--format", "-F",
