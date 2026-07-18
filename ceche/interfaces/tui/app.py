@@ -6,7 +6,7 @@ from typing import Any
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.command import Provider
+from textual.command import Hit, Provider
 from textual.containers import Vertical, VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import (
@@ -24,9 +24,8 @@ from ceche.infrastructure.persistence.store import AppraisalStore
 class CecheCommandProvider(Provider):
     """Command palette with all Ceche commands."""
 
-    async def search(self, query: str) -> list[Any]:  # type: ignore[override]
+    async def search(self, query: str) -> list[Hit]:  # type: ignore[override]
         import typing
-
 
         app = typing.cast(CecheTUI, self.app)
         entries = [
@@ -73,7 +72,7 @@ class CecheCommandProvider(Provider):
             ("Start server", lambda: app.notify("Run: ceche server serve")),
             ("Open web", lambda: app.notify("Run: ceche server web")),
             ("Watch file", lambda: app.notify("Run: ceche watch <file>")),
-            ("Version", lambda: app.notify("ceche v0.2.0")),
+            ("Version", lambda: app.notify("ceche v0.3.1")),
             ("Check version", lambda: app.notify("Run: ceche version check")),
             ("Upgrade", lambda: app.notify("Run: ceche version upgrade")),
             ("Shell completions", lambda: app.notify("Run: ceche shell <bash|zsh|fish>")),
@@ -82,11 +81,16 @@ class CecheCommandProvider(Provider):
             ("Quit", lambda: app.action_quit()),
         ]
 
-        matches = []
+        matches: list[Hit] = []
         for title, cmd in entries:
             if query.lower() in title.lower():
-                from textual.command import Hit as _H
-                matches.append(_H(0, title, cmd, help=title))
+                matches.append(Hit(
+                    score=100.0,
+                    match_display=title,
+                    command=cmd,
+                    text=title,
+                    help=title,
+                ))
         return matches
 
 
@@ -569,16 +573,14 @@ class Sidebar(Vertical):
             self._placeholder.display = True
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        import typing
+        _tui: CecheTUI = typing.cast(CecheTUI, self.app)
         if event.button.id and event.button.id.startswith("session-"):
             run_id = getattr(event.button, "_run_id", None)
             if run_id:
-                import typing
-                app: CecheTUI = typing.cast(CecheTUI, self.app)
-                app.load_session(run_id)
+                _tui.load_session(run_id)
         elif event.button.id == "history-btn":
-            import typing
-            app: CecheTUI = typing.cast(CecheTUI, self.app)
-            app.notify("Run: ceche history")
+            _tui.notify("Run: ceche history")
 
 
 class StatusBar(Static):

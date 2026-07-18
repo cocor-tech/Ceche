@@ -24,7 +24,9 @@ def _current_version() -> str:
 def _latest_version() -> str | None:
     try:
         resp = httpx.get(_PYPI_URL, timeout=10)
-        return resp.json()["info"]["version"]
+        data = resp.json()
+        v: str | None = data.get("info", {}).get("version")
+        return v
     except Exception:
         return None
 

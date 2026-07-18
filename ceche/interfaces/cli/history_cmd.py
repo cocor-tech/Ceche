@@ -36,7 +36,7 @@ def history_main(
                 table.add_row(str(e.get("created_at", "")), val, e.get("confidence", "--"))
         else:
             table = Table(title=f"Appraisal Runs (last {days}d)")
-            table.add_column("Run ID", style="cyan")
+            table.add_column("Run ID", style="green")
             table.add_column("Date")
             table.add_column("Total")
             table.add_column("Succeeded")

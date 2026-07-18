@@ -36,7 +36,7 @@ def compare_run(
         }, indent=2, default=str))
     else:
         table = Table(title=f"Comparison: {domain1} vs {domain2}")
-        table.add_column("Metric", style="cyan")
+        table.add_column("Metric", style="green")
         table.add_column(domain1, style="green")
         table.add_column(domain2, style="green")
         table.add_row("Value", _fv(r1.estimated_value), _fv(r2.estimated_value))

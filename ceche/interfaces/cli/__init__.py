@@ -663,7 +663,7 @@ def _build_unified_output(
 
 def _output_table(results: list[AppraisalResult]) -> None:
     table = Table(title="Ceche -- Domain Appraisal")
-    table.add_column("Domain", style="cyan")
+    table.add_column("Domain", style="green")
     table.add_column("Estimate", justify="right", style="green")
     table.add_column("Range", style="dim")
     table.add_column("Confidence")

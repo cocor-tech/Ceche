@@ -60,7 +60,7 @@ def cache_stats() -> None:
         count = 0
         expired = 0
     table = Table(title="Cache Statistics")
-    table.add_column("Metric", style="cyan")
+    table.add_column("Metric", style="green")
     table.add_column("Value", style="green")
     table.add_row("Path", str(cache_path.resolve()))
     table.add_row("Size", _fmt_size(size))

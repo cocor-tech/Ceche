@@ -54,7 +54,7 @@ def similar_run(
         ], indent=2, default=str))
     else:
         table = Table(title=f"Similar to {domain}")
-        table.add_column("Domain", style="cyan")
+        table.add_column("Domain", style="green")
         table.add_column("Value", justify="right", style="green")
         table.add_column("Confidence")
         table.add_column("Profile")

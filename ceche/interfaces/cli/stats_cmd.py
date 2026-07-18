@@ -24,7 +24,7 @@ def stats_callback(
         console.print(json.dumps({**s, "ai_usage": ai}, indent=2, default=str))
     else:
         table = Table(title=f"Statistics (last {days}d)")
-        table.add_column("Metric", style="cyan")
+        table.add_column("Metric", style="green")
         table.add_column("Value", style="green")
         table.add_row("Total Appraisals", str(s.get("total_appraisals", 0)))
         table.add_row("With Value", str(s.get("with_value", 0)))

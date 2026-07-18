@@ -42,7 +42,7 @@ def portfolio_list(
         console.print(json.dumps(portfolios, indent=2, default=str))
     else:
         table = Table(title="Portfolios")
-        table.add_column("Name", style="cyan")
+        table.add_column("Name", style="green")
         table.add_column("Domains", justify="right")
         table.add_column("Created")
         for p in portfolios:
@@ -70,7 +70,7 @@ def portfolio_show(
             f"({data.get('domain_count', len(data.get('domains', [])))} domains)"
         )
         table = Table()
-        table.add_column("Domain", style="cyan")
+        table.add_column("Domain", style="green")
         table.add_column("Value", justify="right")
         table.add_column("Confidence")
         table.add_column("Tags")
@@ -273,7 +273,7 @@ def portfolio_search(
         console.print(json.dumps(results, indent=2, default=str))
     else:
         table = Table(title=f"Search: '{query}'")
-        table.add_column("Portfolio", style="cyan")
+        table.add_column("Portfolio", style="green")
         table.add_column("Domain")
         table.add_column("Value", justify="right")
         table.add_column("Confidence")

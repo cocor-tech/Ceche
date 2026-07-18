@@ -27,7 +27,7 @@ def config_main(
         console.print(json.dumps(vars(cfg), indent=2, default=str))
     else:
         table = Table(title="Ceche Configuration")
-        table.add_column("Key", style="cyan")
+        table.add_column("Key", style="green")
         table.add_column("Value", style="green")
         table.add_column("Source", style="dim")
         for key in vars(cfg):
