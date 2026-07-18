@@ -105,8 +105,16 @@ class AppraisalEngine:
 
         import re as _re
         cleaned = domain.strip().lower()
-        if not _re.match(r'^[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?)*\.[a-z]{2,}$', cleaned):
-            raise ValueError(f"Invalid domain: '{domain}' — must be a valid domain name (e.g. example.com)")
+        if not _re.match(
+            r'^[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?'
+            r'(\.[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?)*'
+            r'\.[a-z]{2,}$',
+            cleaned,
+        ):
+            raise ValueError(
+                f"Invalid domain: '{domain}' — "
+                "must be a valid domain name (e.g. example.com)"
+            )
 
         parts = cleaned.rsplit(".", 1)
         sld = parts[0] if len(parts) == 2 else cleaned

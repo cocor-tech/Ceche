@@ -31,7 +31,7 @@ def diff_run(
         table.add_column("Value", justify="right", style="green")
         table.add_column("Confidence")
         table.add_column("Range")
-        prev: float | None = None
+        prev: float | None = None  # noqa: F841
         for h in reversed(history):
             val = h.get("estimated_value")
             rl = h.get("range_low")

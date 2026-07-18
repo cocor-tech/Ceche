@@ -13,6 +13,7 @@ from textual.widgets import (
     Button,
     DataTable,
     Input,
+    LoadingIndicator,
     Static,
 )
 
@@ -114,6 +115,11 @@ class CecheTUI(App[None]):
         height: auto;
     }
 
+    #loading {
+        height: 3;
+        content-align: center middle;
+    }
+
     #value-card {
         height: 5;
         padding: 1;
@@ -160,6 +166,8 @@ class CecheTUI(App[None]):
         Binding("escape", "new_domain", "new", show=True),
         Binding("ctrl+p", "command_palette", "commands", show=True),
         Binding("tab", "toggle_view", "toggle", show=True),
+        Binding("j", "scroll_down", "down", show=False),
+        Binding("k", "scroll_up", "up", show=False),
     ]
 
     sidebar_visible: reactive[bool] = reactive(False)
@@ -234,8 +242,8 @@ class CecheTUI(App[None]):
             result_area = self.query_one(ResultArea)
             input_area.show_button()
             result_area.show_result(data)
-        except Exception:
-            pass
+        except Exception as _e:
+            self.notify(f"Failed to load session: {_e}", severity="error")
 
     async def action_new_domain(self) -> None:
         self._current_result = None
@@ -252,6 +260,14 @@ class CecheTUI(App[None]):
         result_area = self.query_one(ResultArea)
         result_area.show_result(self._current_result)
 
+    async def action_scroll_down(self) -> None:
+        area = self.query_one(ResultArea)
+        area.scroll_to(y=area.scroll_y + 2.0)
+
+    async def action_scroll_up(self) -> None:
+        area = self.query_one(ResultArea)
+        area.scroll_to(y=area.scroll_y - 2.0)
+
     async def on_input_submitted(self, message: Input.Changed) -> None:
         """Called when Enter is pressed in the domain input."""
         if not message.value.strip():
@@ -267,9 +283,9 @@ class CecheTUI(App[None]):
 
         try:
             result = await self._engine.appraise(domain, fresh=self._fresh)
-        except Exception as e:
-            result_area.show_error(str(e))
-            input_area.show_button()
+        except Exception as _e:
+            self.notify(str(_e), severity="error")
+            input_area.show_input()
             return
 
         data = {
@@ -314,24 +330,29 @@ class InputArea(Vertical):
         )
         self._button = Button("✓ Check new domain", id="new-domain-btn", variant="primary")
         self._button.display = False
+        self._spinner = LoadingIndicator(id="loading")
+        self._spinner.display = False
         yield self._input
         yield self._button
-        yield Static("", id="loading")
+        yield self._spinner
 
     def show_input(self) -> None:
         self._input.display = True
         self._button.display = False
+        self._spinner.display = False
         self._input.value = ""
         self._input.focus()
 
     def show_button(self) -> None:
         self._input.display = False
         self._button.display = True
+        self._spinner.display = False
         self._button.focus()
 
     def show_loading(self) -> None:
         self._input.display = False
         self._button.display = False
+        self._spinner.display = True
 
 
 class ResultArea(VerticalScroll):
@@ -429,6 +450,9 @@ class Sidebar(Vertical):
 
     def compose(self) -> ComposeResult:
         yield Static("Recent", classes="sidebar-title")
+        self._placeholder = Static("[dim]No recent appraisals[/dim]", id="sidebar-empty")
+        self._placeholder.display = False
+        yield self._placeholder
         for i in range(4):
             btn = Button("", id=f"session-{i}", variant="default")
             btn.display = False
@@ -466,12 +490,12 @@ class Sidebar(Vertical):
                     name = domain if len(domain) <= 18 else domain[:15] + ".."
                     btn.label = f"{name}\n{val_str}"
                     btn.display = True
-                    btn.styles.opacity = 1.0
                     btn._run_id = run_id  # type: ignore[attr-defined]
                 else:
                     btn.display = False
+            self._placeholder.display = len(domains) == 0
         except Exception:
-            pass
+            self._placeholder.display = True
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id and event.button.id.startswith("session-"):

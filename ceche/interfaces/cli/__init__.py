@@ -456,7 +456,6 @@ def bulk_cmd(
 
     import sys as _sys
 
-    from ceche.infrastructure.persistence.store import AppraisalStore
     try:
         failures_dict = [{
             "domain": f.domain, "error_type": f.error_type,
@@ -699,39 +698,6 @@ def _output_pretty(results: list[AppraisalResult]) -> None:
         if r.tld_score:
             console.print(f"  TLD Score:       {r.tld_score}")
         console.print("")
-
-
-def _output_bulk_json(report: object) -> None:
-    from ceche.bulk_engine import BulkReport
-
-    if not isinstance(report, BulkReport):
-        sys.stdout.write(json.dumps({"error": "invalid report type"}, indent=2) + "\n")
-        return
-
-    results_out = [_result_to_dict(r) for r in report.results]
-    failures_out = [_failure_to_dict(f) for f in report.failures]
-
-    agg_mod_summary: dict[str, int] = {}
-    for r in report.results:
-        for me in r.modules.values():
-            s = me.get("status", "UNKNOWN")
-            agg_mod_summary[s] = agg_mod_summary.get(s, 0) + 1
-
-    output = {
-        "version": report.results[0].version if report.results else "",
-        "generated_at": report.results[0].generated_at if report.results else "",
-        "summary": {
-            "total": report.summary.total,
-            "succeeded": report.summary.succeeded,
-            "failed": report.summary.failed,
-            "duration_seconds": report.summary.duration_seconds,
-            "rate_domains_per_second": report.summary.rate_domains_per_second,
-        },
-        "module_summary": agg_mod_summary,
-        "results": results_out,
-        "failures": failures_out,
-    }
-    sys.stdout.write(json.dumps(output, indent=2, default=str) + "\n")
 
 
 def _build_output_opts(
