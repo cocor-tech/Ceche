@@ -6,18 +6,30 @@ import json
 import typer
 from rich.console import Console
 
-from ceche.domain.result import AppraisalResult
 from ceche.engine import AppraisalEngine
 
 demo_app = typer.Typer(help="Run a demo with mock data")
 console = Console()
 
 
-@demo_app.command(name="run")
+@demo_app.callback(invoke_without_command=True)
+def demo_main(
+    count: int = typer.Option(5, "--count", "-n", help="Number of mock domains"),
+    fmt: str = typer.Option("pretty", "--format", "-F", help="Output: pretty, json, table"),
+) -> None:
+    run_demo(count, fmt)
+
+
+@demo_app.command(name="run", hidden=True)
 def demo_run(
     count: int = typer.Option(5, "--count", "-n", help="Number of mock domains"),
     fmt: str = typer.Option("pretty", "--format", "-F", help="Output: pretty, json, table"),
 ) -> None:
+    run_demo(count, fmt)
+
+
+def run_demo(count: int = 5, fmt: str = "pretty") -> None:
+    from typing import Any
 
     class _MockRDAP:
         async def lookup(self, domain): return {"_not_found": True}
@@ -52,12 +64,13 @@ def demo_run(
         "kappamarket.store", "lambdacode.tech", "muservices.online",
     ][:count]
 
+    from ceche.domain.result import AppraisalResult
     results: list[AppraisalResult] = []
     for d in mock_domains:
         r = asyncio.run(engine.appraise(d))
         results.append(r)
 
-    from ceche.interfaces.cli import _build_unified_output, _output_pretty, _output_table
+    from ceche.interfaces.cli import _build_unified_output, _output_table, _output_pretty
     if fmt == "json":
         out = _build_unified_output(results)
         console.print(json.dumps(out, indent=2, default=str))

@@ -42,6 +42,7 @@ from ceche.interfaces.cli.demo_cmd import demo_app
 from ceche.interfaces.cli.diff_cmd import diff_app
 from ceche.interfaces.cli.history_cmd import history_app
 from ceche.interfaces.cli.portfolio_cmd import portfolio_app
+from ceche.interfaces.cli.profile_cmd import register as register_profile
 from ceche.interfaces.cli.retry_cmd import retry_app
 from ceche.interfaces.cli.server_cmd import server_app
 from ceche.interfaces.cli.shell_cmd import shell_app
@@ -51,7 +52,12 @@ from ceche.interfaces.cli.version_cmd import version_app
 from ceche.interfaces.cli.watch_cmd import watch_app
 from ceche.interfaces.output.engine import OutputEngine, OutputOptions
 
-app = typer.Typer(name="ceche", help="Domain Appraisal Engine")
+app = typer.Typer(
+    name="ceche",
+    help="Domain Appraisal Engine",
+    add_completion=False,
+    rich_markup_mode="rich",
+)
 console = Console()
 
 
@@ -176,7 +182,7 @@ def _build_engine(cfg: Config, rate_limiter: RateLimiter | None = None) -> Appra
     )
 
 
-ai_cmd = typer.Typer(help="AI key management")
+ai_cmd = typer.Typer(help="AI key management", hidden=True)
 app.add_typer(ai_cmd, name="ai")
 app.add_typer(cache_app, name="cache")
 app.add_typer(compare_app, name="compare")
@@ -193,6 +199,54 @@ app.add_typer(similar_app, name="similar")
 app.add_typer(stats_app, name="stats")
 app.add_typer(version_app, name="version")
 app.add_typer(watch_app, name="watch")
+
+# Register flattened commands
+register_profile(app)
+
+# Flattened key commands (ceche keys, ceche key-add, ceche key-remove)
+_km = KeyManager()
+
+
+@app.command(name="keys")
+def _top_keys() -> None:
+    """List stored API keys"""
+    keys = _km.list_keys()
+    if not keys:
+        console.print("[dim]No keys stored.[/dim]")
+        return
+    for k in keys:
+        status = "[red]revoked[/red]" if k["revoked"] else "[green]active[/green]"
+        console.print(f"  {k['id'][:8]}... {k['provider']:12s} {k['label']:20s} {status}")
+
+
+@app.command(name="key-add")
+def _top_key_add(
+    provider: str = typer.Option(
+        ..., "--provider", "-p",
+        help="Provider: deepseek, openai, kimi, glm, minimax",
+    ),
+    key: str = typer.Option(..., "--key", "-k", help="API key"),
+    label: str = typer.Option("", "--label", "-l", help="Optional label"),
+    expiry: str = typer.Option("forever", "--expiry", "-e", help="24h, 7d, 30d, 365d, forever"),
+) -> None:
+    """Add an API key"""
+    result = _km.add(provider.lower(), key, label, expiry)
+    kid = result["key_id"][:8]
+    console.print(
+        f"[green]Key stored:[/green] {kid}... ({result['provider']}) "
+        f"expires: {result['expiry']}"
+    )
+
+
+@app.command(name="key-remove")
+def _top_key_remove(
+    key_id: str = typer.Argument(..., help="Key ID to remove"),
+) -> None:
+    """Remove a stored API key"""
+    if _km.remove(key_id):
+        console.print(f"[green]Key revoked:[/green] {key_id[:8]}...")
+    else:
+        console.print(f"[red]Key not found:[/red] {key_id[:8]}...")
 
 
 @app.command(name="start")
@@ -253,7 +307,7 @@ def key_remove(
         console.print(f"[red]Key not found:[/red] {key_id[:8]}...")
 
 
-@app.command(name="check")
+@app.command(name="check", help="Appraise a single domain or a small batch")
 def check_cmd(
     domains: list[str] = typer.Argument(..., help="Domain(s) to appraise or path to file"),
     fresh: bool = typer.Option(False, "--fresh", "-f", help="Bypass cache"),
@@ -338,7 +392,7 @@ def check_cmd(
         _output_pretty(filtered)
 
 
-@app.command(name="bulk")
+@app.command(name="bulk", help="Appraise multiple domains concurrently")
 def bulk_cmd(
     domains: list[str] = typer.Argument(
         None, help="Domain(s) to appraise or path to file. If empty, reads from stdin."
@@ -454,6 +508,7 @@ def _alias_appraise(
     limit: int | None = typer.Option(None, "--limit", help="Max results"),
     skip: int | None = typer.Option(None, "--skip", help="Skip results"),
 ) -> None:
+    console.print("[yellow]'appraise' is deprecated. Use 'ceche check' instead.[/yellow]")
     check_cmd(
         domains, fresh, fmt, output, quiet,
         min_value, max_value, tld, confidence, registered, unregistered,

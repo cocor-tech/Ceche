@@ -87,7 +87,7 @@ def config_export(
             sys.stdout.write(source.read_text() + "\n")
 
 
-profile_app = typer.Typer(help="Manage configuration profiles")
+profile_app = typer.Typer(help="Manage configuration profiles", hidden=True)
 config_app.add_typer(profile_app, name="profile")
 
 
