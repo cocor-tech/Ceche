@@ -34,7 +34,6 @@ def diff_run(
         prev: float | None = None
         for h in reversed(history):
             val = h.get("estimated_value")
-            prev = val
             rl = h.get("range_low")
             rh = h.get("range_high")
             rng = f"${rl:,.0f} - ${rh:,.0f}" if rl and rh else "--"

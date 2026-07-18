@@ -55,6 +55,26 @@ app = typer.Typer(name="ceche", help="Domain Appraisal Engine")
 console = Console()
 
 
+@app.callback(invoke_without_command=True)
+def _version_callback(
+    ctx: typer.Context,
+    version: bool = typer.Option(
+        False, "--version", "-V", help="Show version and exit",
+        is_eager=True,
+    ),
+) -> None:
+    if version:
+        import importlib.metadata
+        try:
+            v = importlib.metadata.version("ceche")
+        except importlib.metadata.PackageNotFoundError:
+            v = "unknown"
+        console.print(f"ceche v{v}")
+        raise typer.Exit()
+    console.print(ctx.get_help())
+    raise typer.Exit()
+
+
 def _build_router(cfg: Config, rate_limiter: RateLimiter | None = None) -> ModelRouter | None:
     import os
 
