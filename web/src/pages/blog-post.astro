@@ -1,0 +1,86 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Blog Post — Ceche" description="Read the latest from Ceche.">
+  <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div id="post-content">
+      <div class="text-center py-16">
+        <div class="skeleton h-8 w-64 mx-auto mb-6"></div>
+        <div class="skeleton h-4 w-48 mx-auto mb-4"></div>
+        <div class="skeleton h-4 w-96 mx-auto mb-3"></div>
+        <div class="skeleton h-4 w-80 mx-auto"></div>
+      </div>
+    </div>
+    <div class="mt-12 text-center">
+      <a href="/blog" class="text-sm text-[#ff8800] hover:underline">&larr; Back to Blog</a>
+    </div>
+  </section>
+</Base>
+
+<script>
+async function load() {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('id');
+  if (!slug) {
+    document.getElementById('post-content').innerHTML = '<p class="text-center text-red-400">No post specified.</p>';
+    return;
+  }
+
+  try {
+    const r = await fetch('/blog/' + encodeURIComponent(slug));
+    if (!r.ok) throw new Error('Not found');
+    const post = await r.json();
+
+    // Update page meta
+    document.title = post.title + ' — Ceche';
+    document.querySelector('meta[name="description"]')?.setAttribute('content', post.excerpt || post.title);
+
+    // Inject Article structured data
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": post.title,
+      "description": post.excerpt || post.title,
+      "datePublished": post.published_at ? new Date(post.published_at * 1000).toISOString() : undefined,
+      "author": { "@type": "Organization", "name": "Ceche" }
+    });
+    document.head.appendChild(script);
+
+    // Render post
+    document.getElementById('post-content').innerHTML = `
+      <article>
+        <h1 class="text-3xl sm:text-4xl font-bold tracking-tight">${post.title}</h1>
+        ${post.published_at ? `<p class="mt-3 text-sm text-[#9ca3af]">${new Date(post.published_at * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>` : ''}
+        ${post.featured_image ? `<img src="${post.featured_image}" alt="${post.title}" class="mt-8 rounded-xl w-full" loading="lazy" />` : ''}
+        <div class="mt-8 prose prose-invert max-w-none">${renderMarkdown(post.content || '')}</div>
+      </article>
+    `;
+  } catch(e) {
+    document.getElementById('post-content').innerHTML = '<p class="text-center text-red-400">Post not found.</p>';
+  }
+}
+
+function renderMarkdown(md) {
+  // Simple markdown to HTML conversion for basic formatting
+  return md
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/^### (.+)$/gm, '<h3 class="text-xl font-semibold mt-8 mb-3">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="text-2xl font-semibold mt-10 mb-4">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 class="text-3xl font-bold mt-12 mb-4">$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc text-[#9ca3af]">$1</li>')
+    .replace(/^\d\. (.+)$/gm, '<li class="ml-4 list-decimal text-[#9ca3af]">$1</li>')
+    .replace(/\n\n/g, '</p><p class="mt-4 text-[#9ca3af] leading-relaxed">')
+    .replace(/^(.+)$/gm, function(m) {
+      if (m.startsWith('<')) return m;
+      if (m.startsWith('http')) return '<a href="' + m + '" class="text-[#ff8800] hover:underline" target="_blank" rel="noopener">' + m + '</a>';
+      return m;
+    });
+}
+
+load();
+</script>

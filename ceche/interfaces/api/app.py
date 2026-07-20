@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from ceche.config import Config
 from ceche.engine import AppraisalEngine
 from ceche.infrastructure.persistence.store import AppraisalStore
-from ceche.interfaces.api.admin import _admin as admin_router
+from ceche.interfaces.api.admin import _admin as admin_router, _db as _mysql_db
 
 
 class AppraiseRequest(BaseModel):
@@ -68,6 +68,47 @@ def create_app() -> FastAPI:
 @app.get("/health")
 async def health_check() -> dict[str, Any]:
     return {"status": "ok", "engine": _engine is not None}
+
+
+# --- Public blog endpoints (no auth required) ---
+
+@app.get("/blog")
+async def public_blog_list() -> list[dict[str, Any]]:
+    """List published blog posts."""
+    conn = _mysql_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, title, slug, excerpt, featured_image, "
+            "UNIX_TIMESTAMP(published_at) as published_at, "
+            "UNIX_TIMESTAMP(created_at) as created_at "
+            "FROM blog_posts WHERE status = 'published' "
+            "ORDER BY published_at DESC"
+        )
+        return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@app.get("/blog/{slug}")
+async def public_blog_post(slug: str) -> dict[str, Any]:
+    """Get a single blog post by slug."""
+    conn = _mysql_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM blog_posts WHERE slug = %s AND status = 'published'",
+            (slug,),
+        )
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Post not found")
+        d = dict(row)
+        if isinstance(d.get("content"), bytes):
+            d["content"] = d["content"].decode()
+        return d
+    finally:
+        conn.close()
 
 
 @app.post("/appraise")
