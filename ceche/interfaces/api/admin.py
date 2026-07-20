@@ -7,12 +7,12 @@ import secrets
 import time
 from typing import Any
 
+import bcrypt
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
 _admin = APIRouter(prefix="/admin/api")
 
-# Simple JWT-like token using HMAC. In production, use a proper JWT library.
 _SECRET = os.getenv("CECHE_ADMIN_SECRET", secrets.token_hex(32))
 
 
@@ -65,17 +65,75 @@ class LoginRequest(BaseModel):
     password: str
 
 
+def _hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+
+def _check_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
+
+
 @_admin.post("/login")
 async def admin_login(req: LoginRequest, response: Response) -> dict[str, Any]:
-    # Simple auth — in production, query MySQL users table with bcrypt
-    if req.email == "admin@ceche.app" and req.password == "admin123":
-        token = _make_token(1, "admin")
+    email = req.email.strip().lower()
+    password = req.password
+
+    # Query the database for this user
+    import sqlite3
+    from pathlib import Path
+
+    db_path = Path.home() / ".config" / "ceche" / "admin.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            name TEXT DEFAULT '',
+            role TEXT DEFAULT 'editor',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+
+    row = conn.execute("SELECT id, password_hash, role FROM users WHERE email = ?", (email,)).fetchone()
+
+    if row is None:
+        # No user found. Check if this matches the initial admin env var.
+        admin_password = os.getenv("CECHE_ADMIN_PASSWORD")
+        if not admin_password or password != admin_password:
+            conn.close()
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        # Create the admin user
+        hashed = _hash_password(password)
+        cursor = conn.execute(
+            "INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)",
+            (email, hashed, "Admin", "admin"),
+        )
+        conn.commit()
+        user_id = cursor.lastrowid
+        token = _make_token(user_id, "admin")
         response.set_cookie(
             key="ceche_admin_token", value=token,
             httponly=True, max_age=86400, samesite="lax",
         )
-        return {"token": token, "role": "admin"}
-    raise HTTPException(status_code=401, detail="Invalid credentials")
+        conn.close()
+        return {"token": token, "role": "admin", "first_run": True}
+
+    # Verify password against stored hash
+    db_id, db_hash, db_role = row
+    if not _check_password(password, db_hash):
+        conn.close()
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = _make_token(db_id, db_role)
+    response.set_cookie(
+        key="ceche_admin_token", value=token,
+        httponly=True, max_age=86400, samesite="lax",
+    )
+    conn.close()
+    return {"token": token, "role": db_role}
 
 
 @_admin.post("/logout")

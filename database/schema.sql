@@ -99,13 +99,8 @@ CREATE TABLE IF NOT EXISTS rate_limit_logs (
     INDEX idx_time (timestamp)
 ) ENGINE=InnoDB;
 
--- Insert default admin user (password: admin123 — CHANGE ON FIRST LOGIN)
-INSERT INTO users (email, password_hash, name, role) VALUES
-('admin@ceche.app', '$2b$12$LJ3m4ys3Lk0TSwHnbfOMiOXPm1Q9D8qKmKFY0JhK5m6n7o8p9q0r', 'Admin', 'admin')
-ON DUPLICATE KEY UPDATE email = email;
-
--- Insert default settings
-INSERT INTO settings (key_name, value, description) VALUES
+-- Default settings (admin user created on first login via CECHE_ADMIN_PASSWORD env var)
+INSERT IGNORE INTO settings (key_name, value, description) VALUES
 ('site_name', 'Ceche', 'Public site name'),
 ('meta_description', 'Domain Appraisal Engine — evaluate any domain across 16 dimensions', 'Default meta description'),
 ('maintenance_mode', 'false', 'Enable maintenance mode for the public site'),
