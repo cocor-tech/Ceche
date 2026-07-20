@@ -22,6 +22,7 @@ dependencies = [
     "rich>=13.0.0,<14.0",
     "wordfreq>=3.0.0,<4.0",
     "textual>=1.0.0,<2.0",
+    "pymysql>=1.0.0,<2.0",
 ]
 
 [project.scripts]
