@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from ceche.config import Config
 from ceche.engine import AppraisalEngine
 from ceche.infrastructure.persistence.store import AppraisalStore
+from ceche.interfaces.api.admin import _admin as admin_router
 
 
 class AppraiseRequest(BaseModel):
@@ -53,9 +54,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title="Ceche Domain Appraisal API",
-    version="2.0.0",
+    version="0.3.2",
     lifespan=lifespan,
 )
+
+app.include_router(admin_router)
 
 
 def create_app() -> FastAPI:

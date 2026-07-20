@@ -1,0 +1,95 @@
+---
+export interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appraisal Engine — evaluate any domain across 16 dimensions" } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en" data-theme="ceche">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href={Astro.url.href} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      html { scroll-behavior: smooth; }
+      body { font-family: 'Inter', sans-serif; }
+    </style>
+  </head>
+  <body class="bg-base-100 text-base-content min-h-screen">
+    <nav class="sticky top-0 z-50 bg-base-100/80 backdrop-blur-md border-b border-[#1a261a]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <a href="/" class="text-xl font-bold tracking-tight">ceche</a>
+          <div class="flex items-center gap-6 text-sm text-[#9ca3af]">
+            <a href="/appraise" class="hover:text-[#ff8800] transition-colors">Appraise</a>
+            <a href="/pricing" class="hover:text-[#ff8800] transition-colors">Pricing</a>
+            <a href="/docs" class="hover:text-[#ff8800] transition-colors">Docs</a>
+            <a href="/blog" class="hover:text-[#ff8800] transition-colors">Blog</a>
+            <a href="https://github.com/cocor-tech/Ceche" target="_blank" rel="noopener" class="hover:text-[#ff8800] transition-colors">
+              GitHub
+            </a>
+            <button id="theme-toggle" class="btn btn-ghost btn-sm" aria-label="Toggle theme">
+              <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+              <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="border-t border-[#1a261a] py-12 mt-24">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#9ca3af]">
+          <div>&copy; {new Date().getFullYear()} Ceche. MIT License.</div>
+          <div class="flex gap-6">
+            <a href="/docs" class="hover:text-[#ff8800] transition-colors">Docs</a>
+            <a href="/blog" class="hover:text-[#ff8800] transition-colors">Blog</a>
+            <a href="https://github.com/cocor-tech/Ceche" target="_blank" rel="noopener" class="hover:text-[#ff8800] transition-colors">GitHub</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Theme toggle
+      const sun = document.getElementById('sun-icon');
+      const moon = document.getElementById('moon-icon');
+      const btn = document.getElementById('theme-toggle');
+      const html = document.documentElement;
+
+      const saved = localStorage.getItem('ceche-theme') || 'ceche';
+      html.setAttribute('data-theme', saved);
+      updateIcons(saved);
+
+      btn.addEventListener('click', () => {
+        const current = html.getAttribute('data-theme');
+        const next = current === 'ceche' ? 'cechelight' : 'ceche';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('ceche-theme', next);
+        updateIcons(next);
+      });
+
+      function updateIcons(theme) {
+        const isDark = theme === 'ceche';
+        sun.classList.toggle('hidden', !isDark);
+        moon.classList.toggle('hidden', isDark);
+      }
+    </script>
+  </body>
+</html>

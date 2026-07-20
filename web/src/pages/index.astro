@@ -1,0 +1,107 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Ceche — Domain Appraisal Engine">
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+    <div class="text-center max-w-3xl mx-auto">
+      <h1 class="text-5xl sm:text-6xl font-bold tracking-tight">
+        Know what any domain is worth
+      </h1>
+      <p class="mt-6 text-lg text-[#9ca3af] max-w-2xl mx-auto">
+        16 dimensions. One price. Instant.
+      </p>
+
+      <!-- Appraisal Input -->
+      <div class="mt-10 max-w-xl mx-auto">
+        <form id="appraise-form" class="flex gap-3">
+          <input
+            type="text"
+            id="domain-input"
+            placeholder="example.com"
+            required
+            class="flex-1 input input-bordered input-lg text-center"
+          />
+          <button type="submit" class="btn btn-primary btn-lg px-8">
+            Appraise
+          </button>
+        </form>
+      </div>
+
+      <!-- Result Card (hidden until appraisal) -->
+      <div id="result-card" class="mt-8 hidden">
+        <div class="card bg-base-200 border border-[#1a261a] p-8 max-w-md mx-auto">
+          <div id="domain-name" class="text-sm text-[#ff8800] font-semibold"></div>
+          <div id="estimated-value" class="text-4xl font-bold mt-2"></div>
+          <div id="range" class="text-sm text-[#9ca3af] mt-1"></div>
+          <div id="confidence" class="text-sm mt-1"></div>
+          <div class="mt-4 text-xs text-[#9ca3af]" id="powered-by">Powered by Ceche</div>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading" class="mt-8 hidden">
+        <span class="loading loading-spinner loading-md text-[#ff8800]"></span>
+      </div>
+    </div>
+
+    <!-- Trust bar -->
+    <div class="mt-24 text-center">
+      <p class="text-sm text-[#9ca3af] uppercase tracking-wider">
+        Used by thousands of domain investors
+      </p>
+      <div class="flex justify-center gap-8 mt-4 text-sm text-[#9ca3af]">
+        <span>Open Source (MIT)</span>
+        <span>16 Valuation Modules</span>
+        <span>CLI + TUI + API</span>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const form = document.getElementById('appraise-form');
+  const input = document.getElementById('domain-input');
+  const result = document.getElementById('result-card');
+  const loading = document.getElementById('loading');
+  const domainName = document.getElementById('domain-name');
+  const estimatedValue = document.getElementById('estimated-value');
+  const range = document.getElementById('range');
+  const confidence = document.getElementById('confidence');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const domain = input.value.trim();
+    if (!domain) return;
+
+    result.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/api/appraise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain }),
+      });
+      const data = await res.json();
+
+      domainName.textContent = data.domain;
+      estimatedValue.textContent = data.estimated_value
+        ? `$${data.estimated_value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+        : '--';
+      range.textContent = data.range
+        ? `Range: $${data.range.low?.toLocaleString() || '--'} - $${data.range.high?.toLocaleString() || '--'}`
+        : '';
+      confidence.textContent = data.confidence
+        ? `Confidence: ${data.confidence}`
+        : '';
+      result.classList.remove('hidden');
+    } catch (err) {
+      domainName.textContent = 'Error';
+      estimatedValue.textContent = 'Could not appraise domain';
+      result.classList.remove('hidden');
+    } finally {
+      loading.classList.add('hidden');
+    }
+  });
+</script>
