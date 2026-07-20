@@ -32,7 +32,7 @@ async function load() {
     }
 
     container.innerHTML = posts.map(post => `
-      <a href="/blog/post?id=${post.slug}" class="card bg-base-200 border border-[#1a261a] p-6 hover:border-[#ff8800] transition-all block" data-aos="fade-up">
+      <a href="/blog/${post.slug}" class="card bg-base-200 border border-[#1a261a] p-6 hover:border-[#ff8800] transition-all block" data-aos="fade-up">
         <h2 class="text-lg font-semibold leading-snug">${post.title}</h2>
         ${post.excerpt ? `<p class="mt-3 text-sm text-[#9ca3af] line-clamp-3">${post.excerpt}</p>` : ''}
         <div class="mt-4 text-xs text-[#9ca3af]">${post.published_at ? new Date(post.published_at * 1000).toLocaleDateString() : ''}</div>
