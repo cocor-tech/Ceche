@@ -5,16 +5,16 @@ import Admin from "../../layouts/Admin.astro";
 <Admin title="Domains — Ceche Admin">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold">Appraised Domains</h1>
-    <div class="text-sm text-[#9ca3af]" id="domain-count"></div>
+    <div class="text-sm text-base-content/60" id="domain-count"></div>
   </div>
   <div class="flex gap-3 mb-4">
-    <input id="search-input" placeholder="Search domain..." class="input input-bordered flex-1" oninput="loadDomains()" />
+    <input id="search-input" placeholder="Search domain..." class="input input-bordered flex-1 bg-base-100 text-base-content" oninput="loadDomains()" />
     <select id="tld-filter" class="select select-bordered" onchange="loadDomains()"><option value="">All TLDs</option><option value="com">.com</option><option value="io">.io</option><option value="ai">.ai</option><option value="org">.org</option><option value="net">.net</option></select>
   </div>
-  <div class="bg-base-200 rounded-xl border border-[#1a261a] overflow-x-auto">
+  <div class="bg-base-200 rounded-xl border border-base-300 overflow-x-auto">
     <table class="table table-sm w-full">
-      <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left p-3">Domain</th><th class="text-right p-3">Value</th><th class="text-center p-3">Confidence</th><th class="text-center p-3">TLD Score</th><th class="text-center p-3">Source</th><th class="text-right p-3">Date</th></tr></thead>
-      <tbody id="domains-table"><tr><td colspan="6" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+      <thead><tr class="text-base-content/60 text-sm border-b border-base-300"><th class="text-left p-3">Domain</th><th class="text-right p-3">Value</th><th class="text-center p-3">Confidence</th><th class="text-center p-3">TLD Score</th><th class="text-center p-3">Source</th><th class="text-right p-3">Date</th></tr></thead>
+      <tbody id="domains-table"><tr><td colspan="6" class="text-center text-base-content/60 py-8">Loading...</td></tr></tbody>
     </table>
   </div>
   <div class="flex justify-center gap-2 mt-4" id="pagination"></div>
@@ -30,8 +30,8 @@ async function loadDomains() {
     const d = await r.json();
     document.getElementById('domain-count').textContent = `${d.total} domains`;
     const t = document.getElementById('domains-table');
-    if (!d.domains.length) { t.innerHTML = '<tr><td colspan="6" class="text-center text-[#9ca3af] py-8">No domains found.</td></tr>'; return; }
-    t.innerHTML = d.domains.map(r => `<tr class="border-b border-[#1a261a] hover:bg-base-300 cursor-pointer" onclick="window.location='/admin/domains/${r.id}'"><td class="p-3">${r.domain}</td><td class="text-right p-3">${r.estimated_value ? '$' + Number(r.estimated_value).toLocaleString() : '--'}</td><td class="text-center p-3">${r.confidence || '--'}</td><td class="text-center p-3">${r.tld_score ?? '--'}</td><td class="text-center p-3">${r.source || '--'}</td><td class="text-right p-3 text-[#9ca3af]">${r.created_at ? new Date(r.created_at*1000).toLocaleDateString() : '--'}</td></tr>`).join('');
+    if (!d.domains.length) { t.innerHTML = '<tr><td colspan="6" class="text-center text-base-content/60 py-8">No domains found.</td></tr>'; return; }
+    t.innerHTML = d.domains.map(r => `<tr class="border-b border-base-300 hover:bg-base-300 cursor-pointer" onclick="window.location='/admin/domains/${r.id}'"><td class="p-3">${r.domain}</td><td class="text-right p-3">${r.estimated_value ? '$' + Number(r.estimated_value).toLocaleString() : '--'}</td><td class="text-center p-3">${r.confidence || '--'}</td><td class="text-center p-3">${r.tld_score ?? '--'}</td><td class="text-center p-3">${r.source || '--'}</td><td class="text-right p-3 text-base-content/60">${r.created_at ? new Date(r.created_at*1000).toLocaleDateString() : '--'}</td></tr>`).join('');
     const totalPages = Math.ceil(d.total / d.per_page);
     let p = '';
     for (let i = 1; i <= Math.min(totalPages, 20); i++) p += `<button class="btn btn-sm ${i === page ? 'btn-primary' : 'btn-ghost'}" onclick="page=${i};loadDomains()">${i}</button>`;

@@ -18,11 +18,11 @@ async function init() {
 
   document.getElementById('editor').innerHTML = `
     <form id="page-form" class="space-y-4 max-w-3xl">
-      <div><label class="label text-sm text-[#9ca3af]">Slug</label><input id="page-slug" class="input input-bordered w-full" value="${data.slug || ''}" /></div>
-      <div><label class="label text-sm text-[#9ca3af]">Title</label><input id="title" class="input input-bordered w-full" value="${(data.title||'').replace(/"/g,'&quot;')}" /></div>
-      <div><label class="label text-sm text-[#9ca3af]">Meta Title (SEO)</label><input id="meta_title" class="input input-bordered w-full" value="${(data.meta_title||'').replace(/"/g,'&quot;')}" /></div>
-      <div><label class="label text-sm text-[#9ca3af]">Meta Description (SEO)</label><textarea id="meta_description" class="textarea textarea-bordered w-full" rows="2">${(data.meta_description||'').replace(/</g,'&lt;')}</textarea></div>
-      <div><label class="label text-sm text-[#9ca3af]">Content (Markdown)</label><textarea id="content" class="textarea textarea-bordered w-full font-mono text-sm" rows="20">${(data.content||'').replace(/</g,'&lt;')}</textarea></div>
+      <div><label class="label text-sm text-base-content/60">Slug</label><input id="page-slug" class="input input-bordered w-full bg-base-100 text-base-content" value="${data.slug || ''}" /></div>
+      <div><label class="label text-sm text-base-content/60">Title</label><input id="title" class="input input-bordered w-full bg-base-100 text-base-content" value="${(data.title||'').replace(/"/g,'&quot;')}" /></div>
+      <div><label class="label text-sm text-base-content/60">Meta Title (SEO)</label><input id="meta_title" class="input input-bordered w-full bg-base-100 text-base-content" value="${(data.meta_title||'').replace(/"/g,'&quot;')}" /></div>
+      <div><label class="label text-sm text-base-content/60">Meta Description (SEO)</label><textarea id="meta_description" class="textarea textarea-bordered w-full bg-base-100 text-base-content" rows="2">${(data.meta_description||'').replace(/</g,'&lt;')}</textarea></div>
+      <div><label class="label text-sm text-base-content/60">Content (Markdown)</label><textarea id="content" class="textarea textarea-bordered w-full font-mono text-sm bg-base-100 text-base-content" rows="20">${(data.content||'').replace(/</g,'&lt;')}</textarea></div>
       <div class="flex gap-3"><button type="submit" class="btn btn-primary">Save</button> <a href="/admin/pages" class="btn btn-ghost">Cancel</a></div>
     </form>
   `;

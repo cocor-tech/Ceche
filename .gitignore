@@ -1,12 +1,30 @@
+# Dependencies
+node_modules/
 .venv/
-.env
+
+# Build output
+web/dist/
+
+# Database & cache
+*.db
+*.sqlite
 __pycache__/
 *.pyc
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-*.egg-info/
-dist/
-build/
-cache.db
-web/node_modules
+
+# Environment & secrets
+.env
+.env.local
+*.env.local
+
+# Config
+*.ceche.toml
+~/.config/ceche/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

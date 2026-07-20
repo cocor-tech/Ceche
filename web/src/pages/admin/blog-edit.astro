@@ -5,7 +5,7 @@ import Admin from "../../layouts/Admin.astro";
 <Admin title="Edit Blog Post — Ceche Admin">
   <h1 class="text-2xl font-bold mb-6">Edit Blog Post</h1>
   <div id="editor" class="max-w-3xl">
-    <div class="text-center text-[#9ca3af] py-8">Loading editor...</div>
+    <div class="text-center text-base-content/60 py-8">Loading editor...</div>
   </div>
 </Admin>
 
@@ -18,14 +18,14 @@ async function init() {
   document.getElementById('editor').innerHTML = `
     <form id="blog-form" class="space-y-4">
       <input id="post-id" type="hidden" value="${postId || 'new'}" />
-      <div><label class="label text-sm text-[#9ca3af]">Title</label><input id="title" class="input input-bordered w-full" required /></div>
+      <div><label class="label text-sm text-base-content/60">Title</label><input id="title" class="input input-bordered w-full bg-base-100 text-base-content" required /></div>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="label text-sm text-[#9ca3af]">Slug</label><input id="slug" class="input input-bordered w-full" /></div>
-        <div><label class="label text-sm text-[#9ca3af]">Status</label><select id="status" class="select select-bordered w-full"><option value="draft">Draft</option><option value="published">Published</option></select></div>
+        <div><label class="label text-sm text-base-content/60">Slug</label><input id="slug" class="input input-bordered w-full bg-base-100 text-base-content" /></div>
+        <div><label class="label text-sm text-base-content/60">Status</label><select id="status" class="select select-bordered w-full"><option value="draft">Draft</option><option value="published">Published</option></select></div>
       </div>
-      <div><label class="label text-sm text-[#9ca3af]">Excerpt</label><textarea id="excerpt" class="textarea textarea-bordered w-full" rows="2"></textarea></div>
-      <div><label class="label text-sm text-[#9ca3af]">Featured Image URL</label><input id="featured_image" class="input input-bordered w-full" /></div>
-      <div><label class="label text-sm text-[#9ca3af]">Content (Markdown)</label><textarea id="content" class="textarea textarea-bordered w-full font-mono text-sm" rows="20"></textarea></div>
+      <div><label class="label text-sm text-base-content/60">Excerpt</label><textarea id="excerpt" class="textarea textarea-bordered w-full bg-base-100 text-base-content" rows="2"></textarea></div>
+      <div><label class="label text-sm text-base-content/60">Featured Image URL</label><input id="featured_image" class="input input-bordered w-full bg-base-100 text-base-content" /></div>
+      <div><label class="label text-sm text-base-content/60">Content (Markdown)</label><textarea id="content" class="textarea textarea-bordered w-full font-mono text-sm bg-base-100 text-base-content" rows="20"></textarea></div>
       <div class="flex gap-3"><button type="submit" class="btn btn-primary">Save</button> <a href="/admin/blog" class="btn btn-ghost">Cancel</a></div>
     </form>
   `;

@@ -2,18 +2,32 @@
 import Base from "../layouts/Base.astro";
 ---
 
-<Base title="Blog — Ceche" description="Domain investing tips, valuation guides, and industry insights from the Ceche team.">
-  <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-    <div class="text-center" data-aos="fade-up">
-      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Blog</h1>
-      <p class="mt-4 text-lg text-[#9ca3af]">Domain investing, valuation guides, and industry insights.</p>
+<Base title="Blog — Ceche" description="Domain investing tips, valuation guides, and industry insights from the Ceche team." active="blog">
+  <!-- Mobile -->
+  <section class="block md:hidden px-4 pt-6 pb-4">
+    <div class="text-center mb-6">
+      <h1 class="text-heading-1 font-display">Blog</h1>
+      <p class="mt-1 text-body-sm text-base-content/50">Domain investing tips and guides.</p>
     </div>
+    <div id="blog-mobile" class="space-y-3">
+      <div class="text-center text-base-content/50 py-8">
+        <div class="skeleton h-5 w-48 mx-auto mb-3"></div>
+        <div class="skeleton h-3 w-32 mx-auto"></div>
+      </div>
+    </div>
+  </section>
 
-    <div class="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="blog-list">
-      <div class="col-span-full text-center text-[#9ca3af] py-16">
-        <div class="skeleton h-6 w-48 mx-auto mb-8"></div>
-        <div class="skeleton h-4 w-64 mx-auto mb-4"></div>
-        <div class="skeleton h-4 w-56 mx-auto"></div>
+  <!-- Desktop -->
+  <section class="hidden md:block max-w-7xl mx-auto px-6 py-24">
+    <div class="text-center max-w-2xl mx-auto">
+      <p class="text-caption text-primary uppercase tracking-wider">Blog</p>
+      <h1 class="text-display-2 font-display mt-2">Domain investing insights</h1>
+      <p class="mt-3 text-body-lg text-base-content/60">Valuation guides, investing strategies, and industry analysis from the Ceche team.</p>
+    </div>
+    <div id="blog-desktop" class="mt-16">
+      <div class="text-center text-base-content/50 py-16">
+        <div class="skeleton h-6 w-64 mx-auto mb-4"></div>
+        <div class="skeleton h-4 w-48 mx-auto"></div>
       </div>
     </div>
   </section>
@@ -22,24 +36,54 @@ import Base from "../layouts/Base.astro";
 <script>
 async function load() {
   try {
-    const r = await fetch('/blog');
+    const r = await fetch('/api/blog');
     const posts = await r.json();
-    const container = document.getElementById('blog-list');
 
-    if (!posts.length) {
-      container.innerHTML = '<div class="col-span-full text-center text-[#9ca3af] py-16">No posts yet.</div>';
-      return;
+    const mobileContainer = document.getElementById('blog-mobile');
+    if (mobileContainer) {
+      if (!posts.length) {
+        mobileContainer.innerHTML = '<p class="text-center text-base-content/50 py-8">No posts yet.</p>';
+      } else {
+        mobileContainer.innerHTML = posts.map(post => `
+          <a href="/blog/${post.slug}" class="card bg-base-200/70 border border-base-300 p-5 block hover:border-primary/30 transition-colors">
+            <h2 class="text-body font-semibold leading-snug">${post.title}</h2>
+            ${post.excerpt ? '<p class="mt-1.5 text-body-sm text-base-content/50 line-clamp-2">' + post.excerpt + '</p>' : ''}
+            <div class="mt-3 text-caption text-base-content/40">${post.published_at ? new Date(post.published_at * 1000).toLocaleDateString() : ''}</div>
+          </a>
+        `).join('');
+      }
     }
 
-    container.innerHTML = posts.map(post => `
-      <a href="/blog/${post.slug}" class="card bg-base-200 border border-[#1a261a] p-6 hover:border-[#ff8800] transition-all block" data-aos="fade-up">
-        <h2 class="text-lg font-semibold leading-snug">${post.title}</h2>
-        ${post.excerpt ? `<p class="mt-3 text-sm text-[#9ca3af] line-clamp-3">${post.excerpt}</p>` : ''}
-        <div class="mt-4 text-xs text-[#9ca3af]">${post.published_at ? new Date(post.published_at * 1000).toLocaleDateString() : ''}</div>
-      </a>
-    `).join('');
-  } catch(e) {
-    document.getElementById('blog-list').innerHTML = '<div class="col-span-full text-center text-red-400 py-16">Failed to load posts.</div>';
+    const desktopContainer = document.getElementById('blog-desktop');
+    if (desktopContainer) {
+      if (!posts.length) {
+        desktopContainer.innerHTML = '<p class="text-center text-base-content/50 py-16">No posts yet.</p>';
+      } else {
+        const featured = posts[0];
+        const rest = posts.slice(1);
+        desktopContainer.innerHTML = `
+          <a href="/blog/${featured.slug}" class="card bg-gradient-to-br from-primary/5 to-base-200 border border-base-300 p-10 mb-10 block hover:shadow-card-hover transition-shadow">
+            <p class="text-caption text-primary uppercase tracking-wider mb-2">Featured</p>
+            <h2 class="text-heading-1 font-display">${featured.title}</h2>
+            ${featured.excerpt ? '<p class="mt-3 text-body text-base-content/60 max-w-2xl">' + featured.excerpt + '</p>' : ''}
+            <div class="mt-4 text-body-sm text-base-content/40">${featured.published_at ? new Date(featured.published_at * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</div>
+          </a>
+          <div class="grid grid-cols-3 gap-6">
+            ${rest.map(post => `
+              <a href="/blog/${post.slug}" class="card bg-base-200/50 border border-base-300 p-6 hover:shadow-card-hover transition-shadow">
+                <h3 class="text-heading-3 font-display leading-snug">${post.title}</h3>
+                ${post.excerpt ? '<p class="mt-2 text-body-sm text-base-content/50 line-clamp-3">' + post.excerpt + '</p>' : ''}
+                <div class="mt-4 text-caption text-base-content/40">${post.published_at ? new Date(post.published_at * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</div>
+              </a>
+            `).join('')}
+          </div>
+        `;
+      }
+    }
+  } catch {
+    [document.getElementById('blog-mobile'), document.getElementById('blog-desktop')].forEach(el => {
+      if (el) el.innerHTML = '<p class="text-center text-error py-16">Failed to load posts.</p>';
+    });
   }
 }
 load();

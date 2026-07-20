@@ -7,10 +7,10 @@ import Admin from "../../../layouts/Admin.astro";
     <h1 class="text-2xl font-bold">Pricing Tiers</h1>
     <button class="btn btn-primary btn-sm" onclick="addTier()">Add Tier</button>
   </div>
-  <div class="bg-base-200 rounded-xl border border-[#1a261a] overflow-x-auto">
+  <div class="bg-base-200 rounded-xl border border-base-300 overflow-x-auto">
     <table class="table table-sm w-full">
-      <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left p-3">Name</th><th class="text-center p-3">Price</th><th class="text-center p-3">Order</th><th class="text-center p-3">Highlighted</th><th class="text-center p-3">Actions</th></tr></thead>
-      <tbody id="pricing-table"><tr><td colspan="5" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+      <thead><tr class="text-base-content/60 text-sm border-b border-base-300"><th class="text-left p-3">Name</th><th class="text-center p-3">Price</th><th class="text-center p-3">Order</th><th class="text-center p-3">Highlighted</th><th class="text-center p-3">Actions</th></tr></thead>
+      <tbody id="pricing-table"><tr><td colspan="5" class="text-center text-base-content/60 py-8">Loading...</td></tr></tbody>
     </table>
   </div>
 </Admin>
@@ -19,8 +19,8 @@ import Admin from "../../../layouts/Admin.astro";
 async function load() {
   const r = await fetch('/admin/api/pricing'); const d = await r.json();
   const t = document.getElementById('pricing-table');
-  if (!d.length) { t.innerHTML = '<tr><td colspan="5" class="text-center text-[#9ca3af] py-8">No tiers yet.</td></tr>'; return; }
-  t.innerHTML = d.map(i => `<tr class="border-b border-[#1a261a]"><td class="p-3">${i.name}</td><td class="text-center p-3">${i.price_label}</td><td class="text-center p-3">${i.sort_order}</td><td class="text-center p-3">${i.highlighted ? '<span class="text-[#ff8800]">Yes</span>' : ''}</td><td class="text-center p-3"><button class="btn btn-ghost btn-xs" onclick="editTier(${i.id})">Edit</button> <button class="btn btn-ghost btn-xs text-red-400" onclick="delTier(${i.id})">Delete</button></td></tr>`).join('');
+  if (!d.length) { t.innerHTML = '<tr><td colspan="5" class="text-center text-base-content/60 py-8">No tiers yet.</td></tr>'; return; }
+  t.innerHTML = d.map(i => `<tr class="border-b border-base-300"><td class="p-3">${i.name}</td><td class="text-center p-3">${i.price_label}</td><td class="text-center p-3">${i.sort_order}</td><td class="text-center p-3">${i.highlighted ? '<span class="text-primary">Yes</span>' : ''}</td><td class="text-center p-3"><button class="btn btn-ghost btn-xs" onclick="editTier(${i.id})">Edit</button> <button class="btn btn-ghost btn-xs text-red-400" onclick="delTier(${i.id})">Delete</button></td></tr>`).join('');
 }
 function addTier() {
   const n = prompt('Name:'); if (!n) return;

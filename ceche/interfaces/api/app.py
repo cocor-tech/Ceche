@@ -10,6 +10,8 @@ from pydantic import BaseModel
 
 from ceche.config import Config
 from ceche.engine import AppraisalEngine
+from ceche.infrastructure.ai.adapters.generic import detect_providers
+from ceche.infrastructure.ai.prompts.catalog import get_prompt
 from ceche.infrastructure.persistence.store import AppraisalStore
 from ceche.interfaces.api.admin import _admin as admin_router, _db as _mysql_db
 
@@ -111,6 +113,44 @@ async def public_blog_post(slug: str) -> dict[str, Any]:
         conn.close()
 
 
+# --- Public blog API aliases (under /api/ for Nginx routing) ---
+
+@app.get("/api/blog")
+async def public_blog_list_api() -> list[dict[str, Any]]:
+    conn = _mysql_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, title, slug, excerpt, featured_image, "
+            "UNIX_TIMESTAMP(published_at) as published_at, "
+            "UNIX_TIMESTAMP(created_at) as created_at "
+            "FROM blog_posts WHERE status = 'published' "
+            "ORDER BY published_at DESC"
+        )
+        return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@app.get("/api/blog/{slug}")
+async def public_blog_post_api(slug: str) -> dict[str, Any]:
+    conn = _mysql_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM blog_posts WHERE slug = %s AND status = 'published'", (slug,)
+        )
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Post not found")
+        d = dict(row)
+        if isinstance(d.get("content"), bytes):
+            d["content"] = d["content"].decode()
+        return d
+    finally:
+        conn.close()
+
+
 # --- Public content endpoints (no auth) ---
 
 @app.get("/api/faq")
@@ -188,6 +228,10 @@ async def public_page(slug: str) -> dict[str, Any]:
         conn.close()
 
 
+@app.post("/api/appraise")
+async def appraise_domain_api(req: AppraiseRequest) -> dict[str, Any]:
+    return await appraise_domain(req)
+
 @app.post("/appraise")
 async def appraise_domain(req: AppraiseRequest) -> dict[str, Any]:
     engine = _get_engine()
@@ -199,6 +243,124 @@ async def appraise_domain(req: AppraiseRequest) -> dict[str, Any]:
             fresh=req.fresh, version=result.version, command="api",
         )
         return _result_to_api(result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/appraise/{domain}/review")
+async def appraise_review(domain: str, req: AppraiseRequest) -> dict[str, Any]:
+    """Appraise domain and return an AI-generated friendly overview with crawl + web search."""
+    engine = _get_engine()
+    store = _get_store()
+    try:
+        result = await engine.appraise(req.domain, fresh=req.fresh)
+        store.record_run(
+            [req.domain], [result], [],
+            fresh=req.fresh, version=result.version, command="api",
+        )
+        api_data = _result_to_api(result)
+
+        providers = detect_providers()
+        if not providers:
+            return {**api_data, "ai_overview": None, "ai_error": "No AI provider configured"}
+
+        ai = providers[0]
+        prompt = get_prompt("ai_overview")
+        if not prompt:
+            return {**api_data, "ai_overview": None, "ai_error": "Review prompt not found"}
+
+        mods = result.modules
+
+        def ms(k: str, field: str) -> str:
+            v = mods.get(k, {})
+            val = v.get(field)
+            return str(val) if val is not None else "N/A"
+
+        registered = "Yes" if str(mods.get("m1_rdap", {}).get("registered", "False")) == "True" else "No"
+        tld = ms("m2_tld_table", "tld")
+
+        registrar = "N/A"
+        registrant = "N/A"
+        raw_rdap = mods.get("m1_rdap", {}).get("raw")
+        if raw_rdap and isinstance(raw_rdap, dict):
+            raw_rdap = dict(raw_rdap)
+            entities = raw_rdap.get("entities") or raw_rdap.get("raw", {}).get("entities") or []
+            if isinstance(entities, list):
+                for ent in entities:
+                    if isinstance(ent, dict):
+                        roles = ent.get("roles", [])
+                        vcard = ent.get("vcardArray", [])
+                        if isinstance(vcard, list) and len(vcard) > 1:
+                            for item in vcard[1]:
+                                if isinstance(item, list) and len(item) > 3:
+                                    field = item[0] if isinstance(item[0], str) else ""
+                                    val = str(item[3]) if item[3] else ""
+                                    if "fn" in field and not registrant.startswith("N/A"):
+                                        registrant = val
+                                    if "org" in field and "N/A" in registrant:
+                                        registrant = val
+                        if "registrar" in roles and registrar.startswith("N/A"):
+                            fn_items = [x for x in (vcard[1] if isinstance(vcard, list) and len(vcard) > 1 else []) if isinstance(x, list) and len(x) > 3 and "fn" in str(x[0])]
+                            if fn_items:
+                                registrar = str(fn_items[0][3])
+                        if registrant.startswith("N/A") and not any(r == "registrar" for r in roles):
+                            fn_items = [x for x in (vcard[1] if isinstance(vcard, list) and len(vcard) > 1 else []) if isinstance(x, list) and len(x) > 3 and "fn" in str(x[0])]
+                            if fn_items:
+                                registrant = str(fn_items[0][3])
+
+        crawl_result = {"crawled": "No", "parked": "N/A", "title": "N/A", "description": "N/A", "status_code": "N/A"}
+        try:
+            from ceche.infrastructure.crawler.crawler import crawl_domain
+            cr = await crawl_domain(req.domain)
+            crawl_result["crawled"] = "Yes" if cr.get("crawled") else "No"
+            crawl_result["parked"] = str(cr.get("parked")) if cr.get("parked") is not None else "N/A"
+            crawl_result["title"] = cr.get("title") or "N/A"
+            crawl_result["description"] = cr.get("description") or "N/A"
+            crawl_result["status_code"] = str(cr.get("status_code")) if cr.get("status_code") else "N/A"
+        except Exception:
+            pass
+
+        search_snippets = "N/A"
+        search_results = "N/A"
+        try:
+            from ceche.domain.ports import SearchPort
+            cfg = Config.load()
+            if cfg.google_cse_key and cfg.google_cse_cx:
+                from ceche.infrastructure.search.google_cse_adapter import GoogleCSEAdapter
+                gsearch = GoogleCSEAdapter(cfg.google_cse_key, cfg.google_cse_cx)
+                sr = await gsearch.search(req.domain)
+                if sr:
+                    search_results = str(sr.result_count) if sr.result_count is not None else "N/A"
+                    search_snippets = " | ".join(sr.snippets[:3]) if sr.snippets else "N/A"
+        except Exception:
+            pass
+
+        try:
+            overview = await ai.complete(
+                system=prompt.system,
+                prompt=prompt.render(
+                    domain=req.domain,
+                    registered=registered,
+                    tld=tld,
+                    crawled=crawl_result["crawled"],
+                    parked=crawl_result["parked"],
+                    crawl_title=crawl_result["title"],
+                    crawl_desc=crawl_result["description"],
+                    crawl_status=crawl_result["status_code"],
+                    registrar=registrar,
+                    registrant=registrant,
+                    search_results=search_results,
+                    search_snippets=search_snippets,
+                    value=f"{result.estimated_value:.0f}" if result.estimated_value else "N/A",
+                    range_low=f"{result.range_low:.0f}" if result.range_low else "N/A",
+                    range_high=f"{result.range_high:.0f}" if result.range_high else "N/A",
+                ),
+                max_tokens=prompt.max_tokens,
+                temperature=prompt.temperature,
+            )
+            return {**api_data, "ai_overview": overview.content}
+        except Exception as e:
+            return {**api_data, "ai_overview": None, "ai_error": str(e)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 

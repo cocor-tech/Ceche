@@ -2,7 +2,7 @@
 import Base from "../layouts/Base.astro";
 ---
 
-<Base title="Ceche — Domain Appraisal Engine">
+<Base title="Ceche — Domain Appraisal Engine" active="home">
   <Fragment slot="head" set:html={`
     <script type="application/ld+json">
     {
@@ -12,122 +12,348 @@ import Base from "../layouts/Base.astro";
       "description": "Domain Appraisal Engine — evaluate any domain across 16 dimensions",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Linux, macOS, Windows",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "author": {
-        "@type": "Organization",
-        "name": "Ceche Contributors"
-      }
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "author": { "@type": "Organization", "name": "Ceche Contributors" }
     }
     </script>
   `} />
-  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-    <div class="text-center max-w-3xl mx-auto">
-      <h1 class="text-5xl sm:text-6xl font-bold tracking-tight">
-        Know what any domain is worth
-      </h1>
-      <p class="mt-6 text-lg text-[#9ca3af] max-w-2xl mx-auto">
-        16 dimensions. One price. Instant.
-      </p>
 
-      <!-- Appraisal Input -->
-      <div class="mt-10 max-w-xl mx-auto">
-        <form id="appraise-form" class="flex gap-3">
+  <!-- Mobile hero -->
+  <section class="block md:hidden min-h-[calc(100dvh-56px)] flex flex-col px-4 pt-16 pb-8 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none"></div>
+    <div class="flex-1 flex flex-col justify-center text-center relative">
+      <h1 class="text-display-3 font-display text-balance leading-[1.1]">
+        Know what any <span class="text-primary">domain name</span> is worth
+      </h1>
+      <p class="mt-4 text-body-lg text-base-content/60 max-w-sm mx-auto">
+        Ceche — 16 dimensions. One price. Instant.
+      </p>
+      <div class="mt-8">
+        <form id="appraise-form-mobile" class="flex flex-col gap-3">
           <input
             type="text"
-            id="domain-input"
+            id="domain-input-mobile"
             placeholder="example.com"
             required
-            class="flex-1 input input-bordered input-lg text-center"
+            class="input input-bordered input-lg text-center w-full bg-base-100 text-base-content"
           />
-          <button type="submit" class="btn btn-primary btn-lg px-8">
+          <button type="submit" class="btn btn-primary btn-lg w-full">
             Appraise
           </button>
         </form>
       </div>
-
-      <!-- Result Card (hidden until appraisal) -->
-      <div id="result-card" class="mt-8 hidden">
-        <div class="card bg-base-200 border border-[#1a261a] p-8 max-w-md mx-auto">
-          <div id="domain-name" class="text-sm text-[#ff8800] font-semibold"></div>
-          <div id="estimated-value" class="text-4xl font-bold mt-2"></div>
-          <div id="range" class="text-sm text-[#9ca3af] mt-1"></div>
-          <div id="confidence" class="text-sm mt-1"></div>
-          <div class="mt-4 text-xs text-[#9ca3af]" id="powered-by">Powered by Ceche</div>
+      <div id="result-card-mobile" class="mt-6 hidden">
+        <div class="card bg-base-200 border border-base-300 p-6 text-center">
+          <p id="domain-name-mobile" class="text-caption text-primary uppercase tracking-wider"></p>
+          <p id="estimated-value-mobile" class="text-display-2 font-display font-bold mt-2"></p>
+          <p id="range-mobile" class="text-body-sm text-base-content/50 mt-1"></p>
+          <div id="ai-overview-mobile" class="mt-3 hidden">
+            <div class="pt-3 border-t border-base-300">
+              <p class="text-caption text-primary uppercase tracking-wider mb-2">AI Overview</p>
+              <div id="ai-loading-mobile" class="flex items-center gap-2 text-body-sm text-base-content/50">
+                <span class="loading loading-spinner loading-xs"></span>
+                Generating AI overview...
+              </div>
+              <div id="ai-content-mobile" class="text-body-sm text-base-content/80 leading-relaxed"></div>
+            </div>
+          </div>
         </div>
       </div>
+      <div id="loading-mobile" class="mt-6 hidden">
+        <div class="card bg-base-200 border border-base-300 p-6 text-center">
+          <div class="flex items-center justify-center gap-2 mb-3">
+            <span class="loading loading-spinner loading-sm text-primary"></span>
+            <span class="text-body-sm text-base-content/60" id="loading-text-mobile">Appraising domain...</span>
+          </div>
+          <div class="skeleton h-3 w-24 mx-auto mb-2"></div>
+          <div class="skeleton h-8 w-36 mx-auto mb-2"></div>
+          <div class="skeleton h-3 w-28 mx-auto"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Mobile trust bar -->
+    <div class="mt-8 text-center">
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-base-200/60 border border-base-300/60 text-body-sm text-base-content/50">
+        <span class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+          Open Source
+        </span>
+        <span class="w-px h-3.5 bg-base-300"></span>
+        <span class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+          <span><span id="domain-count-home">0</span> domain names appraised</span>
+        </span>
+      </div>
+    </div>
+  </section>
 
-      <!-- Loading (skeleton) -->
-      <div id="loading" class="mt-8 hidden">
-        <div class="card bg-base-200 border border-[#1a261a] p-8 max-w-md mx-auto">
-          <div class="skeleton h-4 w-24 mx-auto mb-4"></div>
-          <div class="skeleton h-10 w-48 mx-auto mb-3"></div>
-          <div class="skeleton h-4 w-36 mx-auto mb-2"></div>
-          <div class="skeleton h-4 w-28 mx-auto"></div>
+
+
+  <!-- Desktop hero -->
+  <section class="hidden md:block relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none"></div>
+    <div class="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/[0.02] blur-3xl pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-6 pt-24 pb-32 relative">
+      <div class="grid grid-cols-2 gap-16 items-center">
+        <div>
+          <h1 class="text-display-1 font-display tracking-tight text-balance leading-[1.05]">
+            Know what any <span class="text-primary">domain name</span> is worth
+          </h1>
+          <p class="mt-6 text-body-lg text-base-content/60 max-w-lg leading-relaxed">
+            Ceche evaluates domains across 16 modules — TLD, keywords, CPC, authority, trademarks, and more — to produce a transparent, data-driven valuation in seconds.
+          </p>
+          <div class="mt-10">
+            <form id="appraise-form-desktop" class="flex gap-3 max-w-md">
+              <input
+                type="text"
+                id="domain-input-desktop"
+                placeholder="example.com"
+                required
+                class="flex-1 input input-bordered input-lg bg-base-100 text-base-content"
+              />
+              <button type="submit" class="btn btn-primary btn-lg px-8">
+                Appraise
+              </button>
+            </form>
+          </div>
+          <div id="result-card-desktop" class="mt-8 hidden">
+            <div class="card bg-base-200 border border-base-300 p-8 max-w-md">
+              <p id="domain-name-desktop" class="text-caption text-primary uppercase tracking-wider"></p>
+              <p id="estimated-value-desktop" class="text-display-2 font-display font-bold mt-2"></p>
+              <p id="range-desktop" class="text-body-sm text-base-content/50 mt-1"></p>
+              <div id="ai-overview-desktop" class="mt-4 hidden">
+                <div class="pt-4 border-t border-base-300">
+                  <p class="text-caption text-primary uppercase tracking-wider mb-2">AI Overview</p>
+                  <div id="ai-loading-desktop" class="flex items-center gap-2 text-body-sm text-base-content/50">
+                    <span class="loading loading-spinner loading-xs"></span>
+                    Generating AI overview...
+                  </div>
+                  <div id="ai-content-desktop" class="text-body-sm text-base-content/80 leading-relaxed"></div>
+                </div>
+              </div>
+              <div class="mt-6 pt-4 border-t border-base-300">
+                <a href="/" class="btn btn-outline btn-sm w-full">Appraise another</a>
+              </div>
+            </div>
+          </div>
+          <div id="loading-desktop" class="mt-8 hidden">
+            <div class="card bg-base-200 border border-base-300 p-8 max-w-md text-center">
+              <div class="flex items-center justify-center gap-3 mb-4">
+                <span class="loading loading-spinner loading-md text-primary"></span>
+                <span class="text-body-sm text-base-content/60" id="loading-text-desktop">Appraising domain...</span>
+              </div>
+              <div class="skeleton h-3 w-32 mx-auto mb-2"></div>
+              <div class="skeleton h-8 w-44 mx-auto mb-2"></div>
+              <div class="skeleton h-3 w-36 mx-auto"></div>
+            </div>
+          </div>
+        </div>
+        <div class="relative">
+          <div class="absolute inset-0 bg-gradient-to-br from-primary/[0.07] to-primary/[0.02] rounded-3xl blur-xl"></div>
+          <div class="relative aspect-square rounded-3xl bg-base-200/80 border border-base-300/80 flex items-center justify-center p-12 backdrop-blur-sm">
+            <div class="text-center">
+              <div class="text-caption text-base-content/40 uppercase tracking-wider mb-4 flex items-center justify-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                Example appraisal
+              </div>
+              <div class="text-display-1 font-display font-bold text-primary" id="hero-counter">$0</div>
+              <p class="mt-2 text-body-sm text-base-content/50">ceche.app <span class="text-base-content/20">&middot;</span> 16 modules</p>
+              <div class="mt-6 flex justify-center gap-2">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">TLD .app</span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-medium">Keyword</span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">Brandable</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Trust bar -->
-    <div class="mt-24 text-center">
-      <p class="text-sm text-[#9ca3af] uppercase tracking-wider">
-        Used by thousands of domain investors
-      </p>
-      <div class="flex justify-center gap-8 mt-4 text-sm text-[#9ca3af]">
-        <span>Open Source (MIT)</span>
-        <span>16 Valuation Modules</span>
-        <span>CLI + TUI + API</span>
+    <!-- Feature grid -->
+    <div class="max-w-7xl mx-auto px-6 pb-32">
+      <div class="text-center mb-16">
+        <p class="text-caption text-primary uppercase tracking-wider">Powered by 16 valuation modules</p>
+        <h2 class="text-display-3 font-display mt-3">Every factor that matters</h2>
+        <p class="mt-3 text-body-lg text-base-content/60 max-w-xl mx-auto">
+          From TLD scoring to trademark detection, Ceche analyzes every signal that determines domain value.
+        </p>
+      </div>
+      <div class="grid grid-cols-3 gap-6">
+        {[
+          { title: "TLD Scoring", desc: "Extension hierarchy from .com to new gTLDs, each with calibrated multipliers." },
+          { title: "Word & Length", desc: "Scarcity pricing based on word count and character length analysis." },
+          { title: "Keyword CPC", desc: "Commercial intent scoring from advertising cost-per-click data." },
+          { title: "Search Volume", desc: "Real demand signals from Google and other search engines." },
+          { title: "Domain Age", desc: "Registration history and Wayback Machine snapshot analysis." },
+          { title: "Authority", desc: "Backlink profiles from Ahrefs, Open PageRank, and Moz." },
+          { title: "Trademark Check", desc: "USPTO database search for potential legal conflicts." },
+          { title: "Brandability", desc: "Phonetic and structural scoring for brand potential." },
+          { title: "Comparables", desc: "Market calibration against thousands of actual domain sales." },
+        ].map((f) => (
+          <div class="group card bg-base-200/30 border border-base-300/80 p-6 hover:bg-base-200/60 hover:border-primary/20 hover:shadow-card-hover transition-all duration-200">
+            <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
+              <div class="w-3 h-3 rounded-full bg-primary"></div>
+            </div>
+            <h3 class="text-heading-3 font-display">{f.title}</h3>
+            <p class="mt-2 text-body-sm text-base-content/50 leading-relaxed">{f.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="max-w-5xl mx-auto px-6 pb-24">
+      <div class="grid grid-cols-3 gap-px bg-base-300/50 rounded-2xl overflow-hidden border border-base-300/80">
+        <div class="bg-base-100/50 py-10 text-center">
+          <p class="text-display-3 font-display font-bold text-primary">16</p>
+          <p class="text-body-sm text-base-content/50 mt-1">Valuation modules</p>
+        </div>
+        <div class="bg-base-100/50 py-10 text-center">
+          <p class="text-display-3 font-display font-bold text-primary">MIT</p>
+          <p class="text-body-sm text-base-content/50 mt-1">Open source license</p>
+        </div>
+        <div class="bg-base-100/50 py-10 text-center">
+          <p class="text-display-3 font-display font-bold text-primary">Free</p>
+          <p class="text-body-sm text-base-content/50 mt-1">CLI + API tier available</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop trust bar -->
+    <div class="pb-24 text-center">
+      <div class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-base-200/50 border border-base-300/60 text-body-sm text-base-content/50">
+        <span class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+          Open Source
+        </span>
+        <span class="w-px h-4 bg-base-300"></span>
+        <span class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+          <span><span id="domain-count-home-desktop">0</span> domain names appraised</span>
+        </span>
       </div>
     </div>
   </section>
 </Base>
 
 <script>
-  const form = document.getElementById('appraise-form');
-  const input = document.getElementById('domain-input');
-  const result = document.getElementById('result-card');
-  const loading = document.getElementById('loading');
-  const domainName = document.getElementById('domain-name');
-  const estimatedValue = document.getElementById('estimated-value');
-  const range = document.getElementById('range');
-  const confidence = document.getElementById('confidence');
+const loadingSteps = [
+  { t: 0, msg: 'Appraising domain...' },
+  { t: 3000, msg: 'Checking registration data...' },
+  { t: 8000, msg: 'Analyzing keywords...' },
+  { t: 15000, msg: 'Checking authority signals...' },
+  { t: 25000, msg: 'Calculating final value...' },
+  { t: 40000, msg: 'Querying registries...' },
+  { t: 60000, msg: 'Still working... almost there' },
+  { t: 90000, msg: 'Finalizing valuation...' },
+];
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const domain = input.value.trim();
-    if (!domain) return;
+function setupAppraise(formId, inputId, resultId, loadingId, nameId, valueId, rangeId, loadingTextId) {
+  document.querySelectorAll('#' + formId).forEach(function(form) {
+    var section = form.closest('section');
+    if (!section) return;
+    var input = section.querySelector('#' + inputId);
+    var result = section.querySelector('#' + resultId);
+    var loading = section.querySelector('#' + loadingId);
+    var nameEl = section.querySelector('#' + nameId);
+    var valueEl = section.querySelector('#' + valueId);
+    var rangeEl = section.querySelector('#' + rangeId);
+    var loadText = section.querySelector('#' + loadingTextId);
+    if (!form || !input) return;
 
-    result.classList.add('hidden');
-    loading.classList.remove('hidden');
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var domain = input.value.trim();
+      if (!domain) return;
 
-    try {
-      const res = await fetch('/api/appraise', {
+      if (result) result.classList.add('hidden');
+      if (loading) loading.classList.remove('hidden');
+      if (loadText) loadText.textContent = 'Appraising domain...';
+
+      var startTime = Date.now();
+      var stepIndex = 0;
+      var stepTimer = setInterval(function() {
+        var elapsed = Date.now() - startTime;
+        for (var i = loadingSteps.length - 1; i >= 0; i--) {
+          if (elapsed >= loadingSteps[i].t && i > stepIndex) {
+            stepIndex = i;
+            if (loadText) loadText.textContent = loadingSteps[i].msg;
+            break;
+          }
+        }
+      }, 2000);
+
+      var controller = new AbortController();
+      var timeout = setTimeout(function() { controller.abort(); }, 120000);
+
+      fetch('/api/appraise', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain }),
-      });
-      const data = await res.json();
+        body: JSON.stringify({ domain: domain }),
+        signal: controller.signal,
+      })
+        .then(function(res) { if (!res.ok) throw new Error('Server error'); return res.json(); })
+        .then(function(data) {
+          nameEl.textContent = data.domain;
+          valueEl.textContent = data.estimated_value ? '$' + Number(data.estimated_value).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '--';
+          rangeEl.textContent = data.range ? 'Range: $' + Number(data.range.low || 0).toLocaleString() + ' - $' + Number(data.range.high || 0).toLocaleString() : '';
+          result.classList.remove('hidden');
 
-      domainName.textContent = data.domain;
-      estimatedValue.textContent = data.estimated_value
-        ? `$${data.estimated_value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-        : '--';
-      range.textContent = data.range
-        ? `Range: $${data.range.low?.toLocaleString() || '--'} - $${data.range.high?.toLocaleString() || '--'}`
-        : '';
-      confidence.textContent = data.confidence
-        ? `Confidence: ${data.confidence}`
-        : '';
-      result.classList.remove('hidden');
-    } catch (err) {
-      domainName.textContent = 'Error';
-      estimatedValue.textContent = 'Could not appraise domain';
-      result.classList.remove('hidden');
-    } finally {
-      loading.classList.add('hidden');
-    }
+          var aiSection = section.querySelector('[id^=\"ai-overview-\"]');
+          var aiLoading = section.querySelector('[id^=\"ai-loading-\"]');
+          var aiContent = section.querySelector('[id^=\"ai-content-\"]');
+          if (aiSection && aiLoading && aiContent) {
+            aiSection.classList.remove('hidden');
+            aiLoading.classList.remove('hidden');
+            aiContent.classList.add('hidden');
+            aiContent.innerHTML = '';
+
+            fetch('/api/appraise/' + encodeURIComponent(domain) + '/review', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ domain: domain }),
+            })
+              .then(function(r) { return r.json(); })
+              .then(function(review) {
+                aiLoading.classList.add('hidden');
+                if (review.ai_overview) {
+                  aiContent.textContent = review.ai_overview;
+                  aiContent.classList.remove('hidden');
+                } else if (review.ai_error) {
+                  aiContent.textContent = 'AI: ' + review.ai_error;
+                  aiContent.classList.remove('hidden');
+                }
+              })
+              .catch(function() {
+                aiLoading.classList.add('hidden');
+              });
+          }
+        })
+        .catch(function(err) {
+          nameEl.textContent = 'Error';
+          valueEl.textContent = err.name === 'AbortError' ? 'Request timed out (' + domain + ')' : err.message || 'Could not appraise';
+          result.classList.remove('hidden');
+        })
+        .finally(function() {
+          clearInterval(stepTimer);
+          clearTimeout(timeout);
+          loading.classList.add('hidden');
+        });
+    });
   });
+}
+
+setupAppraise('appraise-form-mobile', 'domain-input-mobile', 'result-card-mobile', 'loading-mobile', 'domain-name-mobile', 'estimated-value-mobile', 'range-mobile', 'loading-text-mobile');
+setupAppraise('appraise-form-desktop', 'domain-input-desktop', 'result-card-desktop', 'loading-desktop', 'domain-name-desktop', 'estimated-value-desktop', 'range-desktop', 'loading-text-desktop');
+
+var counter = document.querySelector('#hero-counter');
+if (counter && window.innerWidth > 767 && typeof gsap !== 'undefined') {
+  gsap.fromTo(counter, { textContent: '$0' }, {
+    textContent: '$12,450',
+    duration: 2,
+    ease: 'power2.out',
+    snap: { textContent: 100 },
+    scrollTrigger: { trigger: counter, start: 'top 80%' },
+  });
+}
 </script>

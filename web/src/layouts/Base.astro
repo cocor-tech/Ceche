@@ -1,10 +1,19 @@
 ---
+import NavMobile from "../components/NavMobile.astro";
+import NavDesktop from "../components/NavDesktop.astro";
+import Footer from "../components/Footer.astro";
+
 export interface Props {
   title?: string;
   description?: string;
+  active?: string;
 }
 
-const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appraisal Engine — evaluate any domain across 16 dimensions" } = Astro.props;
+const {
+  title = "Ceche — Domain Appraisal Engine",
+  description = "Domain Appraisal Engine — evaluate any domain across 16 dimensions",
+  active,
+} = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -22,82 +31,51 @@ const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appra
     <slot name="head" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
       html { scroll-behavior: auto; overflow: hidden; }
-      body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
-      #lenis-wrapper { overflow-y: scroll; height: 100vh; }
-      [data-aos] { opacity: 0; transition: opacity 0.6s ease; }
+      body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; overflow-x: hidden; }
+      #lenis-wrapper { overflow-y: scroll; height: 100dvh; }
+      @media (max-width: 767px) {
+        #lenis-wrapper { height: calc(100dvh - 56px); }
+      }
+      [data-aos] { opacity: 0; transition: opacity 0.5s ease; }
       [data-aos].aos-animate { opacity: 1; }
-
-      /* Blog prose overrides */
       .prose pre code { background: none !important; padding: 0 !important; color: inherit !important; font-size: 0.875em !important; }
       .prose code::before, .prose code::after { content: none !important; }
       .prose ul { list-style-type: disc; padding-left: 1.25em; }
       .prose ol { list-style-type: decimal; padding-left: 1.25em; }
       .prose li { margin-top: 0.25em; margin-bottom: 0.25em; }
       .prose img { border-radius: 0.75rem; }
-      .prose hr { border-color: #1a261a; }
-
-      /* Loading skeleton */
-      .skeleton { background: linear-gradient(90deg, #0d120d 25%, #141c14 50%, #0d120d 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
-      @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-      /* Reduced motion */
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
         [data-aos] { opacity: 1 !important; }
         #lenis-wrapper { overflow-y: auto; height: auto; }
+        html { overflow: auto; }
       }
     </style>
   </head>
   <body class="bg-base-100 text-base-content">
-    <div id="lenis-wrapper">
-      <nav class="sticky top-0 z-50 bg-base-100/80 backdrop-blur-md border-b border-[#1a261a]">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex items-center justify-between h-16">
-            <a href="/" class="text-xl font-bold tracking-tight">ceche</a>
-            <div class="flex items-center gap-6 text-sm text-[#9ca3af]">
-              <a href="/appraise" class="hover:text-[#ff8800] transition-colors">Appraise</a>
-              <a href="/pricing" class="hover:text-[#ff8800] transition-colors">Pricing</a>
-              <a href="/enterprise" class="hover:text-[#ff8800] transition-colors">Enterprise</a>
-              <a href="/blog" class="hover:text-[#ff8800] transition-colors">Blog</a>
-              <a href="/faq" class="hover:text-[#ff8800] transition-colors">FAQ</a>
-              <a href="https://github.com/cocor-tech/Ceche" target="_blank" rel="noopener" class="hover:text-[#ff8800] transition-colors flex items-center gap-1">
-                GitHub
-                <span id="github-stars" class="badge badge-sm badge-outline text-[10px]">--</span>
-              </a>
-              <button id="theme-toggle" class="btn btn-ghost btn-sm" aria-label="Toggle theme">
-                <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <!-- Mobile layout -->
+    <div class="block md:hidden">
+      <div id="lenis-wrapper">
+        <main class="pb-4">
+          <slot />
+        </main>
+        <Footer />
+      </div>
+      <NavMobile active={active} />
+    </div>
 
-      <main>
-        <slot />
-      </main>
-
-      <footer class="border-t border-[#1a261a] py-12 mt-24">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#9ca3af]">
-            <div><span id="domain-counter">0</span> domains appraised &middot; &copy; {new Date().getFullYear()} Ceche. MIT License.</div>
-            <div class="flex gap-6">
-              <a href="/appraise" class="hover:text-[#ff8800] transition-colors">Appraise</a>
-              <a href="/pricing" class="hover:text-[#ff8800] transition-colors">Pricing</a>
-              <a href="/enterprise" class="hover:text-[#ff8800] transition-colors">Enterprise</a>
-              <a href="/blog" class="hover:text-[#ff8800] transition-colors">Blog</a>
-              <a href="/faq" class="hover:text-[#ff8800] transition-colors">FAQ</a>
-              <a href="https://github.com/cocor-tech/Ceche" target="_blank" rel="noopener" class="hover:text-[#ff8800] transition-colors flex items-center gap-1">
-                GitHub
-                <span id="github-stars" class="badge badge-sm badge-outline text-[10px]">--</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+    <!-- Desktop layout -->
+    <div class="hidden md:block">
+      <NavDesktop active={active} />
+      <div id="lenis-wrapper-desktop">
+        <main>
+          <slot />
+        </main>
+        <Footer />
+      </div>
     </div>
 
     <script>
@@ -105,62 +83,75 @@ const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appra
       const sun = document.getElementById('sun-icon');
       const moon = document.getElementById('moon-icon');
       const btn = document.getElementById('theme-toggle');
-      const html = document.documentElement;
-
-      const saved = localStorage.getItem('ceche-theme') || 'ceche';
-      html.setAttribute('data-theme', saved);
-      updateIcons(saved);
-
-      btn.addEventListener('click', () => {
-        const current = html.getAttribute('data-theme');
-        const next = current === 'ceche' ? 'cechelight' : 'ceche';
-        html.setAttribute('data-theme', next);
-        localStorage.setItem('ceche-theme', next);
-        updateIcons(next);
-      });
-
+      if (btn) {
+        const saved = localStorage.getItem('ceche-theme') || 'ceche';
+        document.documentElement.setAttribute('data-theme', saved);
+        updateIcons(saved);
+        btn.addEventListener('click', () => {
+          const current = document.documentElement.getAttribute('data-theme');
+          const next = current === 'cechelight' ? 'ceche' : 'cechelight';
+          document.documentElement.setAttribute('data-theme', next);
+          localStorage.setItem('ceche-theme', next);
+          updateIcons(next);
+        });
+      }
       function updateIcons(theme) {
+        if (!sun || !moon) return;
         const isDark = theme === 'ceche';
-        sun.classList.toggle('hidden', !isDark);
-        moon.classList.toggle('hidden', isDark);
+        sun.classList.toggle('hidden', isDark);
+        moon.classList.toggle('hidden', !isDark);
       }
 
-      // Analytics
+      // Plausible analytics
       const script = document.createElement('script');
       script.src = 'https://plausible.io/js/script.js';
       script.setAttribute('data-domain', 'ceche.app');
       script.defer = true;
       document.head.appendChild(script);
 
-      // Check maintenance mode
+      // Maintenance mode check
       fetch('/admin/api/settings/maintenance_mode')
         .then(r => r.json())
-        .then(d => { if (d.value === 'true') { document.body.innerHTML = '<div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#050805;color:#fff;font-family:sans-serif"><div style="text-align:center"><h1 style="font-size:2rem;margin-bottom:1rem">Under Maintenance</h1><p style="color:#9ca3af">Ceche will be back shortly.</p></div></div>'; } })
+        .then(d => {
+          if (d.value === 'true') {
+            document.body.innerHTML = '<div style="height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);font-family:sans-serif"><div style="text-align:center"><h1 style="font-size:2rem;margin-bottom:1rem">Under Maintenance</h1><p style="opacity:0.6">Ceche will be back shortly.</p></div></div>';
+          }
+        })
         .catch(() => {});
 
       // GitHub stars
       fetch('https://api.github.com/repos/cocor-tech/Ceche')
         .then(r => r.json())
-        .then(d => { document.getElementById('github-stars').textContent = (d.stargazers_count || '0').toLocaleString(); })
-        .catch(() => {});
-
-      // Domain counter (from API)
-      fetch('/admin/api/stats')
-        .then(r => r.json())
         .then(d => {
-          const el = document.getElementById('domain-counter');
-          if (el) el.textContent = (d.total_appraisals || 0).toLocaleString();
+          document.querySelectorAll('#github-stars, #github-stars-desktop').forEach(el => {
+            el.textContent = (d.stargazers_count || '0').toLocaleString();
+          });
         })
         .catch(() => {});
 
-      // Lenis smooth scroll
-      const lenis = new Lenis({ lerp: 0.07, smoothWheel: true });
-      lenis.on('scroll', ScrollTrigger.update);
-      gsap.ticker.add((time) => lenis.raf(time * 1000));
-      gsap.ticker.lagSmoothing(0);
+      // Domain counter
+      fetch('/admin/api/stats')
+        .then(r => r.json())
+        .then(d => {
+          document.querySelectorAll('#domain-counter, #domain-counter-desktop, #domain-count-home, #domain-count-home-desktop').forEach(el => {
+            if (el) el.textContent = (d.total_appraisals || 0).toLocaleString();
+          });
+        })
+        .catch(() => {});
 
-      // AOS init
-      AOS.init({ once: true, duration: 800, offset: 100 });
+      // Lenis smooth scroll (desktop only)
+      const wrapper = document.getElementById('lenis-wrapper-desktop') || document.getElementById('lenis-wrapper');
+      if (wrapper && window.innerWidth > 767 && typeof Lenis !== 'undefined') {
+        const lenis = new Lenis({ wrapper: wrapper, content: wrapper, lerp: 0.07, smoothWheel: true });
+        lenis.on('scroll', () => {});
+        gsap.ticker.add((time) => lenis.raf(time * 1000));
+        gsap.ticker.lagSmoothing(0);
+      }
+
+      // AOS
+      if (typeof AOS !== 'undefined') {
+        AOS.init({ once: true, duration: 600, offset: 80, disable: window.innerWidth < 768 });
+      }
     </script>
     <Fragment set:html={`
       <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>

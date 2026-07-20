@@ -4,14 +4,35 @@ const title = "FAQ — Ceche";
 const description = "Frequently asked questions about domain appraisal, valuation factors, and how Ceche determines domain value.";
 ---
 
-<Base title={title} description={description}>
-  <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-    <div class="text-center" data-aos="fade-up">
-      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Frequently Asked Questions</h1>
-      <p class="mt-4 text-lg text-[#9ca3af]">Everything you need to know about Ceche.</p>
+<Base title={title} description={description} active="faq">
+  <!-- Mobile -->
+  <section class="block md:hidden px-4 pt-6 pb-4">
+    <div class="text-center mb-6">
+      <h1 class="text-heading-1 font-display">FAQ</h1>
+      <p class="mt-1 text-body-sm text-base-content/50">Everything you need to know.</p>
     </div>
-    <div id="faq-container" class="mt-16 space-y-4" data-aos="fade-up" data-aos-delay="100">
-      <div class="text-center text-[#9ca3af] py-8"><div class="skeleton h-6 w-64 mx-auto mb-4"></div><div class="skeleton h-4 w-48 mx-auto"></div></div>
+    <div class="relative mb-4">
+      <input id="faq-search-mobile" type="text" placeholder="Search questions..." class="input input-bordered w-full pl-9 bg-base-100 text-base-content" />
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </div>
+    <div id="faq-mobile" class="space-y-2">
+      <div class="text-center text-base-content/50 py-8"><div class="skeleton h-5 w-48 mx-auto mb-3"></div><div class="skeleton h-3 w-32 mx-auto"></div></div>
+    </div>
+  </section>
+
+  <!-- Desktop -->
+  <section class="hidden md:block max-w-4xl mx-auto px-6 py-24">
+    <div class="text-center max-w-2xl mx-auto">
+      <p class="text-caption text-primary uppercase tracking-wider">Support</p>
+      <h1 class="text-display-2 font-display mt-2">Frequently asked questions</h1>
+      <p class="mt-3 text-body-lg text-base-content/60">Everything you need to know about Ceche domain appraisal.</p>
+    </div>
+    <div class="mt-4 mb-10 max-w-md mx-auto relative">
+      <input id="faq-search-desktop" type="text" placeholder="Search questions..." class="input input-bordered w-full pl-9 bg-base-100 text-base-content" />
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </div>
+    <div id="faq-desktop" class="space-y-3 max-w-3xl mx-auto">
+      <div class="text-center text-base-content/50 py-16"><div class="skeleton h-6 w-64 mx-auto mb-4"></div><div class="skeleton h-4 w-48 mx-auto"></div></div>
     </div>
   </section>
 </Base>
@@ -21,26 +42,46 @@ async function load() {
   try {
     const r = await fetch('/api/faq');
     const items = await r.json();
-    const container = document.getElementById('faq-container');
-    if (!items.length) { container.innerHTML = '<p class="text-center text-[#9ca3af]">No FAQs yet.</p>'; return; }
-    container.innerHTML = items.map((item, i) => `
-      <div class="collapse collapse-plus bg-base-200 border border-[#1a261a] rounded-xl">
+    const mobileContainer = document.getElementById('faq-mobile');
+    const desktopContainer = document.getElementById('faq-desktop');
+    if (!items.length) {
+      [mobileContainer, desktopContainer].forEach(el => { if (el) el.innerHTML = '<p class="text-center text-base-content/50 py-8">No FAQs yet.</p>'; });
+      return;
+    }
+    const render = (items) => items.map((item, i) => `
+      <div class="collapse collapse-plus bg-base-200/70 border border-base-300 rounded-xl">
         <input type="checkbox" />
-        <div class="collapse-title text-base font-medium">${item.question}</div>
-        <div class="collapse-content text-sm text-[#9ca3af]">${item.answer}</div>
+        <div class="collapse-title text-body font-medium min-h-0 py-3.5">${item.question}</div>
+        <div class="collapse-content text-body-sm text-base-content/60">${item.answer}</div>
       </div>
     `).join('');
-    // JSON-LD structured data
+    if (mobileContainer) mobileContainer.innerHTML = render(items);
+    if (desktopContainer) desktopContainer.innerHTML = render(items);
+
+    // JSON-LD
     const script = document.createElement('script');
     script.type = 'application/ld+json';
-    script.textContent = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": items.map(i => ({ "@type": "Question", "name": i.question, "acceptedAnswer": { "@type": "Answer", "text": i.answer } }))
-    });
+    script.textContent = JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": items.map(i => ({ "@type": "Question", "name": i.question, "acceptedAnswer": { "@type": "Answer", "text": i.answer } })) });
     document.head.appendChild(script);
-  } catch(e) {
-    document.getElementById('faq-container').innerHTML = '<p class="text-center text-red-400">Failed to load FAQs.</p>';
+
+    // Search filter
+    function setupSearch(inputId, containerId) {
+      const input = document.getElementById(inputId);
+      const container = document.getElementById(containerId);
+      if (!input || !container) return;
+      input.addEventListener('input', () => {
+        const q = input.value.toLowerCase();
+        const divs = container.querySelectorAll('.collapse');
+        divs.forEach(div => {
+          const qText = div.querySelector('.collapse-title')?.textContent?.toLowerCase() || '';
+          div.style.display = qText.includes(q) ? '' : 'none';
+        });
+      });
+    }
+    setupSearch('faq-search-mobile', 'faq-mobile');
+    setupSearch('faq-search-desktop', 'faq-desktop');
+  } catch {
+    [document.getElementById('faq-mobile'), document.getElementById('faq-desktop')].forEach(el => { if (el) el.innerHTML = '<p class="text-center text-error py-8">Failed to load FAQs.</p>'; });
   }
 }
 load();

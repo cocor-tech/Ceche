@@ -4,10 +4,10 @@ import Admin from "../../layouts/Admin.astro";
 
 <Admin title="Settings — Ceche Admin">
   <h1 class="text-2xl font-bold mb-6">System Settings</h1>
-  <div class="bg-base-200 rounded-xl border border-[#1a261a] overflow-x-auto">
+  <div class="bg-base-200 rounded-xl border border-base-300 overflow-x-auto">
     <table class="table table-sm w-full">
-      <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left p-3">Key</th><th class="text-left p-3">Value</th><th class="text-left p-3">Description</th><th class="text-center p-3">Actions</th></tr></thead>
-      <tbody id="settings-table"><tr><td colspan="4" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+      <thead><tr class="text-base-content/60 text-sm border-b border-base-300"><th class="text-left p-3">Key</th><th class="text-left p-3">Value</th><th class="text-left p-3">Description</th><th class="text-center p-3">Actions</th></tr></thead>
+      <tbody id="settings-table"><tr><td colspan="4" class="text-center text-base-content/60 py-8">Loading...</td></tr></tbody>
     </table>
   </div>
   <button class="btn btn-primary btn-sm mt-4" onclick="addSetting()">Add Setting</button>
@@ -19,8 +19,8 @@ async function load() {
     const r = await fetch('/admin/api/settings');
     const d = await r.json();
     const t = document.getElementById('settings-table');
-    if (!d.length) { t.innerHTML = '<tr><td colspan="4" class="text-center text-[#9ca3af] py-8">No settings yet.</td></tr>'; return; }
-    t.innerHTML = d.map(s => `<tr class="border-b border-[#1a261a]"><td class="p-3 font-mono text-sm">${s.key_name}</td><td class="p-3 font-mono text-sm">${(s.value || '').slice(0, 50)}</td><td class="p-3 text-[#9ca3af] text-sm">${s.description || ''}</td><td class="text-center p-3"><button class="btn btn-ghost btn-xs" onclick="editSetting('${s.key_name}','${(s.value||'').replace(/'/g,"\\'")}','${(s.description||'').replace(/'/g,"\\'")}')">Edit</button> <button class="btn btn-ghost btn-xs text-red-400" onclick="delSetting('${s.key_name}')">Delete</button></td></tr>`).join('');
+    if (!d.length) { t.innerHTML = '<tr><td colspan="4" class="text-center text-base-content/60 py-8">No settings yet.</td></tr>'; return; }
+    t.innerHTML = d.map(s => `<tr class="border-b border-base-300"><td class="p-3 font-mono text-sm">${s.key_name}</td><td class="p-3 font-mono text-sm">${(s.value || '').slice(0, 50)}</td><td class="p-3 text-base-content/60 text-sm">${s.description || ''}</td><td class="text-center p-3"><button class="btn btn-ghost btn-xs" onclick="editSetting('${s.key_name}','${(s.value||'').replace(/'/g,"\\'")}','${(s.description||'').replace(/'/g,"\\'")}')">Edit</button> <button class="btn btn-ghost btn-xs text-red-400" onclick="delSetting('${s.key_name}')">Delete</button></td></tr>`).join('');
   } catch(e) {}
 }
 async function delSetting(k) { if (confirm('Delete?')) { await fetch('/admin/api/settings/' + encodeURIComponent(k), {method:'DELETE'}); load(); } }

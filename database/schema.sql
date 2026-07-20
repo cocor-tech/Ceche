@@ -99,6 +99,59 @@ CREATE TABLE IF NOT EXISTS rate_limit_logs (
     INDEX idx_time (timestamp)
 ) ENGINE=InnoDB;
 
+-- FAQ items (editable from admin panel)
+CREATE TABLE IF NOT EXISTS faq_items (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    question    TEXT NOT NULL,
+    answer      TEXT NOT NULL,
+    sort_order  INT DEFAULT 0,
+    active      TINYINT(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Pricing tiers (editable from admin panel)
+CREATE TABLE IF NOT EXISTS pricing_tiers (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(100) NOT NULL,
+    price_label   VARCHAR(50) NOT NULL,
+    price_subtext VARCHAR(100) DEFAULT '',
+    features      JSON NOT NULL,
+    cta_label     VARCHAR(50) DEFAULT 'Get Started',
+    cta_url       VARCHAR(255) DEFAULT '',
+    highlighted   TINYINT(1) DEFAULT 0,
+    sort_order    INT DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Enterprise features (editable from admin panel)
+CREATE TABLE IF NOT EXISTS enterprise_features (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    title       VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    sort_order  INT DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Competitor comparisons (editable from admin panel)
+CREATE TABLE IF NOT EXISTS comparisons (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    competitor       VARCHAR(100) NOT NULL,
+    slug             VARCHAR(100) UNIQUE NOT NULL,
+    rows_data        JSON NOT NULL,
+    meta_title       VARCHAR(255) DEFAULT '',
+    meta_description TEXT,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Static pages (editable from admin panel)
+CREATE TABLE IF NOT EXISTS pages (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    slug             VARCHAR(100) UNIQUE NOT NULL,
+    title            VARCHAR(255) NOT NULL,
+    content          TEXT NOT NULL,
+    meta_title       VARCHAR(255) DEFAULT '',
+    meta_description TEXT,
+    updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Default settings (admin user created on first login via CECHE_ADMIN_PASSWORD env var)
 INSERT IGNORE INTO settings (key_name, value, description) VALUES
 ('site_name', 'Ceche', 'Public site name'),

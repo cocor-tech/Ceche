@@ -1,0 +1,243 @@
+---
+export interface Props {
+  active?: "home" | "pricing" | "blog";
+}
+const { active } = Astro.props;
+
+const links = [
+  { id: "home", href: "/", label: "Home", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+  { id: "pricing", href: "/pricing", label: "Pricing", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
+  { id: "blog", href: "/blog/", label: "Blog", icon: "M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" },
+];
+
+const drawerLinks = [
+  { href: "/enterprise", label: "Enterprise" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/compare?slug=godaddy", label: "Comparisons" },
+  { href: "/contact", label: "Contact" },
+  { href: "https://github.com/cocor-tech/Ceche", label: "GitHub", external: true },
+];
+---
+
+<style>
+  .btm-nav-custom {
+    display: flex;
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--fallback-b2, oklch(var(--b2)));
+    border-top: 1px solid var(--fallback-b3, oklch(var(--b3)));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 4px;
+    gap: 2px;
+  }
+  .btm-nav-custom a {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border-radius: 12px;
+    padding: 6px 0;
+    transition: all 0.15s ease;
+    color: var(--fallback-bc, oklch(var(--bc) / 0.4));
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btm-nav-custom a.active {
+    color: var(--fallback-p, oklch(var(--p)));
+    background: var(--fallback-p, oklch(var(--p) / 0.1));
+  }
+  .btm-nav-custom a:not(.active):active {
+    background: var(--fallback-b3, oklch(var(--b3) / 0.5));
+  }
+  .btm-nav-custom a svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 1.5;
+  }
+  .btm-nav-custom a span {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 40;
+    display: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .drawer-overlay.open {
+    display: block;
+  }
+  .drawer-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    height: 100dvh;
+    width: 280px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--fallback-b2, oklch(var(--b2)));
+    border-left: 1px solid var(--fallback-b3, oklch(var(--b3)));
+    z-index: 50;
+    transform: translateX(100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+  }
+  .drawer-panel.open {
+    transform: translateX(0);
+  }
+  .drawer-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-radius: 10px;
+    transition: background 0.15s;
+    font-size: 15px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .drawer-link:active {
+    background: var(--fallback-b3, oklch(var(--b3) / 0.5));
+  }
+</style>
+
+<nav class="btm-nav-custom md:hidden" id="bottom-nav">
+  {links.map((link) => (
+    <a
+      href={link.href}
+      class={active === link.id ? 'active' : ''}
+      aria-label={link.label}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d={link.icon} />
+      </svg>
+      <span>{link.label}</span>
+    </a>
+  ))}
+  <!-- More button -->
+  <a href="#" id="more-btn" aria-label="More">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>
+    </svg>
+    <span>More</span>
+  </a>
+</nav>
+
+<div class="drawer-overlay md:hidden" id="drawer-overlay"></div>
+
+<aside class="drawer-panel md:hidden" id="drawer-panel">
+  <div class="px-5 pt-5 pb-2">
+    <p class="text-sm font-semibold">More</p>
+  </div>
+  <nav class="px-3 pb-4 flex flex-col gap-0.5">
+    {drawerLinks.map((link) => (
+      <a
+        href={link.href}
+        target={link.external ? '_blank' : undefined}
+        rel={link.external ? 'noopener' : undefined}
+        class="drawer-link"
+        data-drawer-close
+      >
+        <span>{link.label}</span>
+        {link.external ? (
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-30"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+        ) : ''}
+      </a>
+    ))}
+    <hr class="border-t border-base-300 my-3 mx-2" />
+    <a href="/" class="btn btn-primary w-full mt-1" data-drawer-close>Appraise a Domain</a>
+    <div class="mt-4 mx-2 flex items-center justify-between rounded-lg bg-base-300/50 px-4 py-3" id="mobile-theme-toggle">
+      <span class="text-sm font-medium">Theme</span>
+      <div class="flex items-center gap-2">
+        <svg id="mobile-sun-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <input type="checkbox" class="toggle toggle-sm toggle-primary" id="mobile-theme-switch" />
+        <svg id="mobile-moon-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </div>
+    </div>
+  </nav>
+</aside>
+
+<script>
+(function() {
+  const overlay = document.getElementById('drawer-overlay');
+  const panel = document.getElementById('drawer-panel');
+  const moreBtn = document.getElementById('more-btn');
+
+  function open() {
+    overlay.classList.add('open');
+    panel.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function close() {
+    overlay.classList.remove('open');
+    panel.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  if (moreBtn) {
+    moreBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      open();
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', function() {
+      close();
+    });
+  }
+
+  document.querySelectorAll('[data-drawer-close]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      close();
+    });
+  });
+
+  // Theme toggle in mobile drawer
+  const themeSwitch = document.getElementById('mobile-theme-switch');
+  const sunIcon = document.getElementById('mobile-sun-icon');
+  const moonIcon = document.getElementById('mobile-moon-icon');
+
+  function syncMobileTheme() {
+    var theme = document.documentElement.getAttribute('data-theme');
+    var isLight = theme === 'cechelight';
+    if (themeSwitch) themeSwitch.checked = isLight;
+    if (sunIcon) sunIcon.classList.toggle('hidden', !isLight);
+    if (moonIcon) moonIcon.classList.toggle('hidden', isLight);
+  }
+
+  if (themeSwitch) {
+    themeSwitch.addEventListener('change', function() {
+      var theme = document.documentElement.getAttribute('data-theme');
+      var next = theme === 'cechelight' ? 'ceche' : 'cechelight';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('ceche-theme', next);
+      syncMobileTheme();
+
+      var sun = document.getElementById('sun-icon');
+      var moon = document.getElementById('moon-icon');
+      if (sun && moon) {
+        var isDark = next === 'ceche';
+        sun.classList.toggle('hidden', isDark);
+        moon.classList.toggle('hidden', !isDark);
+      }
+    });
+  }
+
+  syncMobileTheme();
+})();
+</script>

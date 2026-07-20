@@ -7,10 +7,10 @@ import Admin from "../../../layouts/Admin.astro";
     <h1 class="text-2xl font-bold">Static Pages</h1>
     <button class="btn btn-primary btn-sm" onclick="addPage()">Add Page</button>
   </div>
-  <div class="bg-base-200 rounded-xl border border-[#1a261a] overflow-x-auto">
+  <div class="bg-base-200 rounded-xl border border-base-300 overflow-x-auto">
     <table class="table table-sm w-full">
-      <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left p-3">Slug</th><th class="text-left p-3">Title</th><th class="text-center p-3">Updated</th><th class="text-center p-3">Actions</th></tr></thead>
-      <tbody id="pages-table"><tr><td colspan="4" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+      <thead><tr class="text-base-content/60 text-sm border-b border-base-300"><th class="text-left p-3">Slug</th><th class="text-left p-3">Title</th><th class="text-center p-3">Updated</th><th class="text-center p-3">Actions</th></tr></thead>
+      <tbody id="pages-table"><tr><td colspan="4" class="text-center text-base-content/60 py-8">Loading...</td></tr></tbody>
     </table>
   </div>
 </Admin>
@@ -19,8 +19,8 @@ import Admin from "../../../layouts/Admin.astro";
 async function load() {
   const r = await fetch('/admin/api/pages'); const d = await r.json();
   const t = document.getElementById('pages-table');
-  if (!d.length) { t.innerHTML = '<tr><td colspan="4" class="text-center text-[#9ca3af] py-8">No pages yet.</td></tr>'; return; }
-  t.innerHTML = d.map(i => `<tr class="border-b border-[#1a261a]"><td class="p-3 font-mono text-sm">${i.slug}</td><td class="p-3">${i.title}</td><td class="text-center p-3 text-[#9ca3af]">${i.updated_at ? 'Yes' : '--'}</td><td class="text-center p-3"><a href="/admin/pages-edit?slug=${i.slug}" class="btn btn-ghost btn-xs">Edit</a> <button class="btn btn-ghost btn-xs text-red-400" onclick="delPage('${i.slug}')">Delete</button></td></tr>`).join('');
+  if (!d.length) { t.innerHTML = '<tr><td colspan="4" class="text-center text-base-content/60 py-8">No pages yet.</td></tr>'; return; }
+  t.innerHTML = d.map(i => `<tr class="border-b border-base-300"><td class="p-3 font-mono text-sm">${i.slug}</td><td class="p-3">${i.title}</td><td class="text-center p-3 text-base-content/60">${i.updated_at ? 'Yes' : '--'}</td><td class="text-center p-3"><a href="/admin/pages-edit?slug=${i.slug}" class="btn btn-ghost btn-xs">Edit</a> <button class="btn btn-ghost btn-xs text-red-400" onclick="delPage('${i.slug}')">Delete</button></td></tr>`).join('');
 }
 function addPage() {
   const s = prompt('Slug (e.g. about):'); if (!s) return;

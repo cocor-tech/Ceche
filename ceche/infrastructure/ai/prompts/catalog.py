@@ -293,6 +293,70 @@ M16_BRANDABILITY = Prompt(
     temperature=0.3,
 )
 
+AI_REVIEW = Prompt(
+    id="ai_overview",
+    version="2.0.0",
+    module="review",
+    purpose="Generate a friendly AI overview of domain appraisal results with web search and parked detection",
+    system=(
+        "You are a domain name analyst. Given appraisal data, crawl results, and web search context "
+        "for a domain, write a brief, factual overview. Be conversational but concise. "
+        "Do not use markdown. Write in plain English sentences. "
+        "Never mention confidence, completeness, or how many modules returned data. "
+        "Never speculate about what the domain 'could be used for' or its 'potential'. "
+        "Always end the overview with a call to subscribe to premium for more detailed data."
+    ),
+    user_template=(
+        "Domain: {domain}\n"
+        "Registered: {registered}\n"
+        "TLD: {tld}\n"
+        "Web crawl - crawled: {crawled}\n"
+        "Web crawl - parked: {parked}\n"
+        "Web crawl - title: {crawl_title}\n"
+        "Web crawl - description: {crawl_desc}\n"
+        "Web crawl - status: {crawl_status}\n"
+        "Registrar: {registrar}\n"
+        "Registrant: {registrant}\n"
+        "Web search - results: {search_results}\n"
+        "Web search - snippets: {search_snippets}\n"
+        "Estimated value: ${value}\n"
+        "Value range: ${range_low} - ${range_high}\n\n"
+        "Write a brief overview with exactly these sections:\n"
+        "1. One-line availability/status: '{domain} is [registered/available/parked/active].'\n"
+        "2. If crawled: describe what was found on the site (title, content, parked vs active).\n"
+        "3. If registrant info available: mention who registered it.\n"
+        "4. Web search context: what the domain name is associated with online.\n"
+        "5. Estimated value range.\n"
+        "6. Final line: 'For more detailed data, subscribe to Premium: /pricing'"
+    ),
+    examples=[
+        PromptExample(
+            input=(
+                "example.com Yes com crawled=True parked=False "
+                "Example Domain crawl_title This domain is for use in illustrative examples "
+                "Internet Corporation for Assigned Names and Numbers registrar "
+                "registrant_org Internet Assigned Numbers Authority "
+                "15000 100  example domain test example website "
+                "1200 800 1800"
+            ),
+            output=(
+                "example.com is registered and active. "
+                "The site features 'Example Domain' and is used for illustrative examples in documentation. "
+                "Registered through Internet Corporation for Assigned Names and Numbers, "
+                "with the registrant being Internet Assigned Numbers Authority. "
+                "The domain name is widely associated with example websites and testing. "
+                "Estimated value ranges from $800 to $1,800. "
+                "For more detailed data, subscribe to Premium: /pricing"
+            ),
+            explanation="Full overview with availability, crawl data, registrant, web search, and premium CTA",
+        ),
+    ],
+    output_format=OutputFormat.TEXT,
+    max_tokens=350,
+    temperature=0.5,
+)
+
+
 _ALL_PROMPTS: dict[str, Prompt] = {
     "m05_pronounce": M05_PRONOUNCE,
     "m06_disambiguate": M06_DISAMBIGUATE,
@@ -303,6 +367,7 @@ _ALL_PROMPTS: dict[str, Prompt] = {
     "m13_confidence": M13_CONFIDENCE,
     "m15_pricing": M15_PRICING,
     "m16_brandability": M16_BRANDABILITY,
+    "ai_overview": AI_REVIEW,
 }
 
 

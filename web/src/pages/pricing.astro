@@ -4,14 +4,58 @@ const title = "Pricing — Ceche";
 const description = "Free domain appraisal CLI, affordable API access, and enterprise plans for high-volume domain investors.";
 ---
 
-<Base title={title} description={description}>
-  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-    <div class="text-center" data-aos="fade-up">
-      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Simple Pricing</h1>
-      <p class="mt-4 text-lg text-[#9ca3af]">Start free. Scale as you grow.</p>
+<Base title={title} description={description} active="pricing">
+  <!-- Mobile -->
+  <section class="block md:hidden px-4 pt-6 pb-4">
+    <div class="text-center mb-6">
+      <h1 class="text-heading-1 font-display">Simple Pricing</h1>
+      <p class="mt-1 text-body-sm text-base-content/50">Start free. Scale as you grow.</p>
     </div>
-    <div id="pricing-container" class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-      <div class="col-span-full text-center text-[#9ca3af] py-16"><div class="skeleton h-6 w-48 mx-auto mb-4"></div><div class="skeleton h-4 w-64 mx-auto"></div></div>
+    <div id="pricing-mobile" class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4">
+      <div class="snap-center shrink-0 w-[85vw]">
+        <div class="card bg-base-200 border border-base-300 p-6">
+          <div class="skeleton h-5 w-24 mb-3"></div>
+          <div class="skeleton h-8 w-32 mb-2"></div>
+          <div class="skeleton h-3 w-40 mb-4"></div>
+          <div class="skeleton h-4 w-full mb-2"></div>
+          <div class="skeleton h-4 w-3/4"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Desktop -->
+  <section class="hidden md:block max-w-7xl mx-auto px-6 py-24">
+    <div class="text-center max-w-xl mx-auto">
+      <p class="text-caption text-primary uppercase tracking-wider">Pricing</p>
+      <h1 class="text-display-2 font-display mt-2">Simple, transparent pricing</h1>
+      <p class="mt-3 text-body-lg text-base-content/60">Start free. Scale as you grow. No hidden fees.</p>
+    </div>
+    <div id="pricing-desktop" class="mt-16 grid grid-cols-3 gap-8 max-w-5xl mx-auto">
+      <div class="card bg-base-200/50 border border-base-300 p-8">
+        <div class="skeleton h-5 w-24 mb-4"></div>
+        <div class="skeleton h-10 w-32 mb-3"></div>
+        <div class="skeleton h-3 w-40 mb-6"></div>
+        <div class="skeleton h-4 w-full mb-2"></div>
+        <div class="skeleton h-4 w-3/4 mb-2"></div>
+        <div class="skeleton h-4 w-5/6"></div>
+      </div>
+      <div class="card bg-base-200 border-2 border-primary p-8 relative">
+        <div class="skeleton h-5 w-24 mb-4"></div>
+        <div class="skeleton h-10 w-32 mb-3"></div>
+        <div class="skeleton h-3 w-40 mb-6"></div>
+        <div class="skeleton h-4 w-full mb-2"></div>
+        <div class="skeleton h-4 w-3/4 mb-2"></div>
+        <div class="skeleton h-4 w-5/6"></div>
+      </div>
+      <div class="card bg-base-200/50 border border-base-300 p-8">
+        <div class="skeleton h-5 w-24 mb-4"></div>
+        <div class="skeleton h-10 w-32 mb-3"></div>
+        <div class="skeleton h-3 w-40 mb-6"></div>
+        <div class="skeleton h-4 w-full mb-2"></div>
+        <div class="skeleton h-4 w-3/4 mb-2"></div>
+        <div class="skeleton h-4 w-5/6"></div>
+      </div>
     </div>
   </section>
 </Base>
@@ -21,22 +65,46 @@ async function load() {
   try {
     const r = await fetch('/api/pricing');
     const tiers = await r.json();
-    const container = document.getElementById('pricing-container');
-    if (!tiers.length) { container.innerHTML = '<p class="col-span-full text-center text-[#9ca3af]">No pricing configured.</p>'; return; }
-    container.innerHTML = tiers.map(t => `
-      <div class="card bg-base-200 border ${t.highlighted ? 'border-2 border-[#ff8800]' : 'border-[#1a261a]'} p-8 relative">
-        ${t.highlighted ? '<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#ff8800] text-white text-xs font-semibold px-4 py-0.5 rounded-full">Recommended</div>' : ''}
-        <h3 class="text-lg font-semibold">${t.name}</h3>
-        <p class="text-3xl font-bold mt-4">${t.price_label}</p>
-        ${t.price_subtext ? `<p class="text-sm text-[#9ca3af] mt-1">${t.price_subtext}</p>` : ''}
-        <ul class="mt-6 space-y-3 text-sm">
-          ${(t.features || []).map(f => `<li class="flex items-start gap-2"><span class="text-[#22c55e] mt-0.5">&#10003;</span> ${f}</li>`).join('')}
-        </ul>
-        <a href="${t.cta_url || '/appraise'}" class="btn ${t.highlighted ? 'btn-primary' : 'btn-outline btn-primary'} w-full mt-8">${t.cta_label}</a>
-      </div>
-    `).join('');
-  } catch(e) {
-    document.getElementById('pricing-container').innerHTML = '<p class="col-span-full text-center text-red-400">Failed to load pricing.</p>';
+    if (!tiers.length) {
+      document.querySelectorAll('#pricing-mobile, #pricing-desktop').forEach(el => el.innerHTML = '<p class="text-center text-base-content/50 py-16">No pricing configured.</p>');
+      return;
+    }
+    // Mobile
+    const mobileContainer = document.getElementById('pricing-mobile');
+    if (mobileContainer) {
+      mobileContainer.innerHTML = tiers.map((t, i) => `
+        <div class="snap-center shrink-0 w-[85vw]">
+          <div class="card ${t.highlighted ? 'bg-base-200 border-2 border-primary' : 'bg-base-200/70 border border-base-300'} p-6 ${i === 0 ? '' : ''}">
+            ${t.highlighted ? '<div class="text-caption text-primary uppercase tracking-wider mb-2">Recommended</div>' : ''}
+            <h3 class="text-heading-2 font-display">${t.name}</h3>
+            <p class="text-display-3 font-display font-bold mt-3">${t.price_label}</p>
+            ${t.price_subtext ? '<p class="text-body-sm text-base-content/50 mt-1">' + t.price_subtext + '</p>' : ''}
+            <ul class="mt-5 space-y-2.5 text-body-sm">
+              ${(t.features || []).map(f => '<li class="flex items-start gap-2"><span class="text-secondary shrink-0 mt-0.5">&#10003;</span> ' + f + '</li>').join('')}
+            </ul>
+            <a href="${t.cta_url || '/appraise'}" class="btn ${t.highlighted ? 'btn-primary' : 'btn-outline'} w-full mt-6">${t.cta_label}</a>
+          </div>
+        </div>
+      `).join('');
+    }
+    // Desktop
+    const desktopContainer = document.getElementById('pricing-desktop');
+    if (desktopContainer) {
+      desktopContainer.innerHTML = tiers.map(t => `
+        <div class="card ${t.highlighted ? 'bg-base-200 border-2 border-primary shadow-elevated relative' : 'bg-base-200/50 border border-base-300 shadow-card hover:shadow-card-hover transition-shadow'} p-8">
+          ${t.highlighted ? '<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-content text-caption font-semibold px-4 py-1 rounded-full">Recommended</div>' : ''}
+          <h3 class="text-heading-2 font-display">${t.name}</h3>
+          <p class="text-display-2 font-display font-bold mt-4">${t.price_label}</p>
+          ${t.price_subtext ? '<p class="text-body-sm text-base-content/50 mt-1">' + t.price_subtext + '</p>' : ''}
+          <ul class="mt-6 space-y-3">
+            ${(t.features || []).map(f => '<li class="flex items-start gap-2.5 text-body-sm text-base-content/70"><span class="text-secondary shrink-0 mt-0.5">&#10003;</span> ' + f + '</li>').join('')}
+          </ul>
+          <a href="${t.cta_url || '/appraise'}" class="btn ${t.highlighted ? 'btn-primary' : 'btn-outline'} w-full mt-8">${t.cta_label}</a>
+        </div>
+      `).join('');
+    }
+  } catch {
+    document.querySelectorAll('#pricing-mobile, #pricing-desktop').forEach(el => el.innerHTML = '<p class="text-center text-error py-16">Failed to load pricing.</p>');
   }
 }
 load();

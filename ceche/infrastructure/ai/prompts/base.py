@@ -12,6 +12,7 @@ class OutputFormat(Enum):
     LABEL = "LABEL"
     ASSESSMENT = "ASSESSMENT"
     BRAND = "BRAND"
+    TEXT = "TEXT"
 
 
 @dataclass

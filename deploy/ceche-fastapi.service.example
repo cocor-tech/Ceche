@@ -1,0 +1,29 @@
+# Ceche FastAPI - systemd service example
+# Copy to /etc/systemd/system/ceche-fastapi.service
+# Replace environment variable values with your own.
+
+[Unit]
+Description=Ceche FastAPI Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/path/to/ceche
+ExecStart=/path/to/ceche/.venv/bin/ceche server serve --port 8080 --host 127.0.0.1
+Restart=always
+RestartSec=5
+Environment="CECHE_MYSQL_HOST=localhost"
+Environment="CECHE_MYSQL_USER=ceche"
+Environment="CECHE_MYSQL_PASSWORD=your-mysql-password"
+Environment="CECHE_MYSQL_DATABASE=ceche"
+Environment="CECHE_ADMIN_SECRET=generate-a-random-secret"
+Environment="CECHE_ADMIN_PASSWORD=your-admin-password"
+Environment="DEEPSEEK_API_KEY=your-deepseek-key"
+Environment="CECHE_AI_ENABLED=true"
+Environment="CECHE_OPR_KEY=your-opr-key"
+Environment="CECHE_GOOGLE_CSE_KEY=your-google-cse-key"
+Environment="CECHE_GOOGLE_CSE_CX=your-google-cse-cx"
+
+[Install]
+WantedBy=multi-user.target

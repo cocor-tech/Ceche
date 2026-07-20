@@ -5,29 +5,29 @@ import Admin from "../../layouts/Admin.astro";
 <Admin title="Dashboard — Ceche Admin">
   <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <div class="stat bg-base-200 rounded-xl border border-[#1a261a] p-4">
-      <div class="stat-title text-sm text-[#9ca3af]">Total Appraisals</div>
+    <div class="stat bg-base-200 rounded-xl border border-base-300 p-4">
+      <div class="stat-title text-sm text-base-content/60">Total Appraisals</div>
       <div class="stat-value text-2xl font-bold mt-1" id="total-appraisals">--</div>
     </div>
-    <div class="stat bg-base-200 rounded-xl border border-[#1a261a] p-4">
-      <div class="stat-title text-sm text-[#9ca3af]">Today</div>
+    <div class="stat bg-base-200 rounded-xl border border-base-300 p-4">
+      <div class="stat-title text-sm text-base-content/60">Today</div>
       <div class="stat-value text-2xl font-bold mt-1" id="today-appraisals">--</div>
     </div>
-    <div class="stat bg-base-200 rounded-xl border border-[#1a261a] p-4">
-      <div class="stat-title text-sm text-[#9ca3af]">Average Value</div>
+    <div class="stat bg-base-200 rounded-xl border border-base-300 p-4">
+      <div class="stat-title text-sm text-base-content/60">Average Value</div>
       <div class="stat-value text-2xl font-bold mt-1" id="avg-value">--</div>
     </div>
-    <div class="stat bg-base-200 rounded-xl border border-[#1a261a] p-4">
-      <div class="stat-title text-sm text-[#9ca3af]">Top Domain</div>
-      <div class="stat-value text-2xl font-bold mt-1 text-[#ff8800]" id="top-domain">--</div>
+    <div class="stat bg-base-200 rounded-xl border border-base-300 p-4">
+      <div class="stat-title text-sm text-base-content/60">Top Domain</div>
+      <div class="stat-value text-2xl font-bold mt-1 text-primary" id="top-domain">--</div>
     </div>
   </div>
-  <div class="bg-base-200 rounded-xl border border-[#1a261a] p-6">
+  <div class="bg-base-200 rounded-xl border border-base-300 p-6">
     <h2 class="text-lg font-semibold mb-4">Recent Appraisals</h2>
     <div class="overflow-x-auto">
       <table class="table table-sm w-full">
-        <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left pb-3">Domain</th><th class="text-right pb-3">Value</th><th class="text-center pb-3">Confidence</th><th class="text-right pb-3">Source</th><th class="text-right pb-3">Date</th></tr></thead>
-        <tbody id="recent-table"><tr><td colspan="5" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+        <thead><tr class="text-base-content/60 text-sm border-b border-base-300"><th class="text-left pb-3">Domain</th><th class="text-right pb-3">Value</th><th class="text-center pb-3">Confidence</th><th class="text-right pb-3">Source</th><th class="text-right pb-3">Date</th></tr></thead>
+        <tbody id="recent-table"><tr><td colspan="5" class="text-center text-base-content/60 py-8">Loading...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -47,8 +47,8 @@ async function load() {
     const r = await fetch('/admin/api/recent?limit=10');
     const d = await r.json();
     const t = document.getElementById('recent-table');
-    if (!d.length) { t.innerHTML = '<tr><td colspan="5" class="text-center text-[#9ca3af] py-8">No appraisals yet.</td></tr>'; return; }
-    t.innerHTML = d.map(r => `<tr class="border-b border-[#1a261a]"><td class="py-3">${r.domain}</td><td class="text-right py-3">${r.estimated_value ? '$' + Number(r.estimated_value).toLocaleString() : '--'}</td><td class="text-center py-3">${r.confidence || '--'}</td><td class="text-right py-3">${r.source || '--'}</td><td class="text-right py-3 text-[#9ca3af]">${r.created_at ? new Date(r.created_at*1000).toLocaleDateString() : '--'}</td></tr>`).join('');
+    if (!d.length) { t.innerHTML = '<tr><td colspan="5" class="text-center text-base-content/60 py-8">No appraisals yet.</td></tr>'; return; }
+    t.innerHTML = d.map(r => `<tr class="border-b border-base-300"><td class="py-3">${r.domain}</td><td class="text-right py-3">${r.estimated_value ? '$' + Number(r.estimated_value).toLocaleString() : '--'}</td><td class="text-center py-3">${r.confidence || '--'}</td><td class="text-right py-3">${r.source || '--'}</td><td class="text-right py-3 text-base-content/60">${r.created_at ? new Date(r.created_at*1000).toLocaleDateString() : '--'}</td></tr>`).join('');
   } catch(e) {}
 }
 load();

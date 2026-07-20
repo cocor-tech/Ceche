@@ -4,10 +4,10 @@ import Admin from "../../layouts/Admin.astro";
 
 <Admin title="Rate Limits — Ceche Admin">
   <h1 class="text-2xl font-bold mb-6">Rate Limits</h1>
-  <div class="bg-base-200 rounded-xl border border-[#1a261a] overflow-x-auto">
+  <div class="bg-base-200 rounded-xl border border-base-300 overflow-x-auto">
     <table class="table table-sm w-full">
-      <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left p-3">Tier</th><th class="text-center p-3">Requests/Min</th><th class="text-center p-3">Burst</th><th class="text-center p-3">Concurrent</th><th class="text-center p-3">Enabled</th><th class="text-center p-3">Actions</th></tr></thead>
-      <tbody id="limits-table"><tr><td colspan="6" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+      <thead><tr class="text-base-content/60 text-sm border-b border-base-300"><th class="text-left p-3">Tier</th><th class="text-center p-3">Requests/Min</th><th class="text-center p-3">Burst</th><th class="text-center p-3">Concurrent</th><th class="text-center p-3">Enabled</th><th class="text-center p-3">Actions</th></tr></thead>
+      <tbody id="limits-table"><tr><td colspan="6" class="text-center text-base-content/60 py-8">Loading...</td></tr></tbody>
     </table>
   </div>
 </Admin>
@@ -18,7 +18,7 @@ async function load() {
     const r = await fetch('/admin/api/rate-limits');
     const d = await r.json();
     const t = document.getElementById('limits-table');
-    t.innerHTML = d.map(l => `<tr class="border-b border-[#1a261a]"><td class="p-3 font-semibold capitalize">${l.tier}</td><td class="text-center p-3"><input class="input input-bordered input-xs w-20 text-center" id="rpm-${l.tier}" value="${l.requests_per_minute}" /></td><td class="text-center p-3"><input class="input input-bordered input-xs w-20 text-center" id="burst-${l.tier}" value="${l.burst_size}" /></td><td class="text-center p-3"><input class="input input-bordered input-xs w-20 text-center" id="conc-${l.tier}" value="${l.concurrent_limit}" /></td><td class="text-center p-3"><input type="checkbox" class="toggle toggle-sm" id="enabled-${l.tier}" ${l.enabled ? 'checked' : ''} /></td><td class="text-center p-3"><button class="btn btn-primary btn-xs" onclick="save('${l.tier}')">Save</button></td></tr>`).join('');
+    t.innerHTML = d.map(l => `<tr class="border-b border-base-300"><td class="p-3 font-semibold capitalize">${l.tier}</td><td class="text-center p-3"><input class="input input-bordered input-xs w-20 text-center bg-base-100 text-base-content" id="rpm-${l.tier}" value="${l.requests_per_minute}" /></td><td class="text-center p-3"><input class="input input-bordered input-xs w-20 text-center bg-base-100 text-base-content" id="burst-${l.tier}" value="${l.burst_size}" /></td><td class="text-center p-3"><input class="input input-bordered input-xs w-20 text-center bg-base-100 text-base-content" id="conc-${l.tier}" value="${l.concurrent_limit}" /></td><td class="text-center p-3"><input type="checkbox" class="toggle toggle-sm" id="enabled-${l.tier}" ${l.enabled ? 'checked' : ''} /></td><td class="text-center p-3"><button class="btn btn-primary btn-xs" onclick="save('${l.tier}')">Save</button></td></tr>`).join('');
   } catch(e) {}
 }
 async function save(tier) {

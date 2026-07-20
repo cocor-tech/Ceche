@@ -7,10 +7,10 @@ import Admin from "../../../layouts/Admin.astro";
     <h1 class="text-2xl font-bold">FAQ Items</h1>
     <button class="btn btn-primary btn-sm" onclick="addItem()">Add Item</button>
   </div>
-  <div class="bg-base-200 rounded-xl border border-[#1a261a] overflow-x-auto">
+  <div class="bg-base-200 rounded-xl border border-base-300 overflow-x-auto">
     <table class="table table-sm w-full">
-      <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left p-3">Question</th><th class="text-center p-3">Order</th><th class="text-center p-3">Active</th><th class="text-center p-3">Actions</th></tr></thead>
-      <tbody id="faq-table"><tr><td colspan="4" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+      <thead><tr class="text-base-content/60 text-sm border-b border-base-300"><th class="text-left p-3">Question</th><th class="text-center p-3">Order</th><th class="text-center p-3">Active</th><th class="text-center p-3">Actions</th></tr></thead>
+      <tbody id="faq-table"><tr><td colspan="4" class="text-center text-base-content/60 py-8">Loading...</td></tr></tbody>
     </table>
   </div>
 </Admin>
@@ -19,8 +19,8 @@ import Admin from "../../../layouts/Admin.astro";
 async function load() {
   const r = await fetch('/admin/api/faq'); const d = await r.json();
   const t = document.getElementById('faq-table');
-  if (!d.length) { t.innerHTML = '<tr><td colspan="4" class="text-center text-[#9ca3af] py-8">No items yet.</td></tr>'; return; }
-  t.innerHTML = d.map(i => `<tr class="border-b border-[#1a261a]"><td class="p-3">${i.question?.slice(0,80)}</td><td class="text-center p-3">${i.sort_order}</td><td class="text-center p-3">${i.active ? '<span class="text-green-400">Yes</span>' : 'No'}</td><td class="text-center p-3"><button class="btn btn-ghost btn-xs" onclick="editItem(${i.id})">Edit</button> <button class="btn btn-ghost btn-xs text-red-400" onclick="delItem(${i.id})">Delete</button></td></tr>`).join('');
+  if (!d.length) { t.innerHTML = '<tr><td colspan="4" class="text-center text-base-content/60 py-8">No items yet.</td></tr>'; return; }
+  t.innerHTML = d.map(i => `<tr class="border-b border-base-300"><td class="p-3">${i.question?.slice(0,80)}</td><td class="text-center p-3">${i.sort_order}</td><td class="text-center p-3">${i.active ? '<span class="text-green-400">Yes</span>' : 'No'}</td><td class="text-center p-3"><button class="btn btn-ghost btn-xs" onclick="editItem(${i.id})">Edit</button> <button class="btn btn-ghost btn-xs text-red-400" onclick="delItem(${i.id})">Delete</button></td></tr>`).join('');
 }
 function addItem() {
   const q = prompt('Question:'); if (!q) return;
