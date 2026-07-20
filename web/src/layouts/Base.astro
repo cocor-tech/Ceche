@@ -29,6 +29,17 @@ const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appra
       #lenis-wrapper { overflow-y: scroll; height: 100vh; }
       [data-aos] { opacity: 0; transition: opacity 0.6s ease; }
       [data-aos].aos-animate { opacity: 1; }
+
+      /* Loading skeleton */
+      .skeleton { background: linear-gradient(90deg, #0d120d 25%, #141c14 50%, #0d120d 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+      @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+      /* Reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+        [data-aos] { opacity: 1 !important; }
+        #lenis-wrapper { overflow-y: auto; height: auto; }
+      }
     </style>
   </head>
   <body class="bg-base-100 text-base-content">
@@ -102,6 +113,19 @@ const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appra
         sun.classList.toggle('hidden', !isDark);
         moon.classList.toggle('hidden', isDark);
       }
+
+      // Analytics
+      const script = document.createElement('script');
+      script.src = 'https://plausible.io/js/script.js';
+      script.setAttribute('data-domain', 'ceche.app');
+      script.defer = true;
+      document.head.appendChild(script);
+
+      // Check maintenance mode
+      fetch('/admin/api/settings/maintenance_mode')
+        .then(r => r.json())
+        .then(d => { if (d.value === 'true') { document.body.innerHTML = '<div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#050805;color:#fff;font-family:sans-serif"><div style="text-align:center"><h1 style="font-size:2rem;margin-bottom:1rem">Under Maintenance</h1><p style="color:#9ca3af">Ceche will be back shortly.</p></div></div>'; } })
+        .catch(() => {});
 
       // GitHub stars
       fetch('https://api.github.com/repos/cocor-tech/Ceche')

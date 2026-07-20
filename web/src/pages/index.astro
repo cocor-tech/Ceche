@@ -60,9 +60,14 @@ import Base from "../layouts/Base.astro";
         </div>
       </div>
 
-      <!-- Loading -->
+      <!-- Loading (skeleton) -->
       <div id="loading" class="mt-8 hidden">
-        <span class="loading loading-spinner loading-md text-[#ff8800]"></span>
+        <div class="card bg-base-200 border border-[#1a261a] p-8 max-w-md mx-auto">
+          <div class="skeleton h-4 w-24 mx-auto mb-4"></div>
+          <div class="skeleton h-10 w-48 mx-auto mb-3"></div>
+          <div class="skeleton h-4 w-36 mx-auto mb-2"></div>
+          <div class="skeleton h-4 w-28 mx-auto"></div>
+        </div>
       </div>
     </div>
 
