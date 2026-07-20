@@ -10,7 +10,8 @@ Enterprise-grade web platform for domain appraisal. SEO-optimized, admin-managed
 |---|---|---|
 | **Frontend** | Astro (SSR mode) | SEO-first, island architecture, zero JS by default |
 | **UI components** | Tailwind CSS v4 + DaisyUI + Preline UI | Pre-built, existing — no custom components |
-| **Animations** | AOS (Animate on Scroll) + GSAP | Pre-built libraries, zero custom animation code |
+| **Animation engine** | GSAP + Lenis | Industry-standard animation + smooth scroll |
+| **Animations** | See Animation Stack section below | 14 pre-built libraries, zero custom code |
 | **Charts** | Chart.js | Pre-built, for admin dashboard |
 | **Icons** | Lucide | Pre-built SVG icon set |
 | **Font** | Inter (Google Fonts CDN) | Existing, no custom loading |
@@ -193,12 +194,133 @@ Light/dark toggle via `data-theme` attribute on `<html>`, persisted in `localSto
 
 ---
 
-## Pre-built Components (Zero Custom Code)
+## Animation Stack (14 Pre-built Libraries)
+
+All pre-built, open source, production-proven. Zero custom animation code.
+
+### Library Catalog
+
+| Library | Size | Purpose | Where Applied |
+|---|---|---|---|
+| **GSAP** | ~30KB | Core animation engine — timeline sequencing, transform interpolation | Page-wide — hero, cards, module graph, counters |
+| **GSAP ScrollTrigger** | ~15KB | Scroll-driven animations — parallax, pin, scrub, reveal | Scroll-triggered reveals, pricing cards stagger, blog index |
+| **GSAP MotionPath** | ~8KB | SVG path following | Module graph — lines drawing on scroll |
+| **Lenis** | ~8KB | Smooth scroll with inertia — replaces native scroll | Entire site — all pages |
+| **Splitting.js** | ~5KB | Text splitting — character, word, line segmentation for reveal animations | Hero headline, section titles, value displays |
+| **tsParticles** | ~50KB | Background particle systems | Hero section background (subtle floating particles) |
+| **Typed.js** | ~10KB | Typewriter text effect | Hero subtitle: rotating phrases |
+| **AutoAnimate** | ~3KB | Auto animation on DOM mount/unmount | Blog list, search results, filter transitions |
+| **astro-page-transition** | built-in | Morph between pages without full reload | All internal page navigations |
+| **nprogress** | ~2KB | Top progress bar during page load | Page transitions, API calls |
+| **DaisyUI skeleton** | ~1KB | Content loading placeholders | Blog index cards, admin tables during fetch |
+| **AOS** | ~20KB | Fallback scroll reveal (if GSAP is overkill) | Simple fade-in sections, footer elements |
+
+### Total animation payload: ~150KB gzipped — loaded once, cached across pages.
+
+---
+
+### Animation Placement Map
+
+#### Hero Section — 6 animations layered
+
+```
+                    ┌─────────────────────────────────────────┐
+  Typed.js ─────────┤  Know what any domain is worth          │  ← Subtitle cycles: "Know what any domain is worth"
+                    │  [    ]  [Appraise]                      │     "Make data-driven domain decisions"
+  tsParticles ──────┤  (subtle floating particles in bg)      │     "Enterprise-grade domain valuation"
+                    │                                         │
+  GSAP + Lenis ─────┤  ── $8,331 ──  (counts up from 0)      │  ← GSAP counter + Splitting.js text reveal
+  Splitting.js ─────┤  namesranker.com · Medium confidence    │
+                    │                                         │
+                    │  1,247,893 domains appraised            │  ← GSAP counter (counts up on scroll)
+  ScrollTrigger ────┤  (revealed when scrolled into view)     │
+                    └─────────────────────────────────────────┘
+```
+
+#### Feature Cards — 3 animations
+
+```
+GSAP stagger ──→  Card 1 (fade + translateY, enters first)   │
+                  Card 2 (staggered 0.1s later)              │  ← All 4 cards enter in sequence
+                  Card 3 (staggered 0.2s later)              │     on scroll into view
+                  Card 4 (staggered 0.3s later)              │
+
+Hover:  GSAP ──→  card scale(1.02) + glow border + lift shadow
+```
+
+#### Module Graph — 3 animations
+
+```
+GSAP MotionPath ──→  Connection lines draw from M1→VALUE    │  ← Lines animate like they're
+                      M2→VALUE ... M16→VALUE                 │     being drawn by a pen
+
+ScrollTrigger ─────→  Graph pins in place while scrolling     │  ← "Pin" effect — content scrolls over it
+
+GSAP ──────────────→  Central VALUE node pulses slowly         │  ← Pulsing glow on the value node
+```
+
+#### Pricing Cards — 3 animations
+
+```
+                  ┌──────────┐ ┌──────────┐ ┌──────────┐
+  GSAP stagger ──→│   Free   │ │   Pro    │ │Enterprise│  ← Cards fly in from bottom in sequence
+                  │          │ │          │ │          │
+                  └──────────┘ └──────────┘ └──────────┘
+                  │          │ │          │ │          │
+  Lenis ─────────→│  Smooth scroll down                      │  ← Lenis handles all scroll inertia
+                  │                                          │
+  Splitting.js ──→│ "Start appraising — it's free"           │  ← CTA text reveals character by character
+```
+
+#### Blog Index — 2 animations
+
+```
+AutoAnimate ──────→  Filter posts → cards reflow smoothly     │  ← Category filter triggers layout animation
+AOS ──────────────→  Cards fade in on scroll into view       │  ← Simple fade-in for blog cards
+```
+
+#### Page Transitions — 2 animations
+
+```
+astro-page-transition ─→  Morph between pages (no white flash)  │  ← SPA-like navigation
+nprogress ─────────────→  Top progress bar during load          │  ← Visual feedback while page loads
+```
+
+---
+
+### Animation Timing & Easing
+
+| Animation | Duration | Easing | Delay |
+|---|---|---|---|
+| Hero text reveal | 0.8s | `power3.out` | 0.2s after load |
+| Value counter | 1.2s | `power2.out` | 0.5s after result |
+| Feature cards stagger | 0.6s each | `power2.out` | 0.1s between each |
+| Module graph draw | 2.0s | `power1.inOut` | on scroll trigger |
+| Pricing cards stagger | 0.5s each | `power2.out` | 0.15s between each |
+| Page transition morph | 0.4s | `power2.inOut` | instant |
+| Counter (stats) | 1.0s | `power1.out` | on scroll trigger |
+| Card hover lift | 0.2s | `power2.out` | on hover |
+
+### Respecting User Preferences
+
+```
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+All animations respect `prefers-reduced-motion`. When enabled, GSAP falls back to setting final values instantly, Lenis uses native scroll, tsParticles stops updating, and all transitions complete in 0.01ms.
+
+---
+
+## Pre-built UI Components (Zero Custom Code)
 
 | Need | Library |
 |---|---|
-| Scroll animations | `aos` (Animate on Scroll) |
-| Page transitions | `astro-page-transition` (built into Astro) |
 | Tables | `@tanstack/table` |
 | Charts | `chart.js` |
 | Markdown editor | `@uiw/react-md-editor` |
@@ -211,6 +333,7 @@ Light/dark toggle via `data-theme` attribute on `<html>`, persisted in `localSto
 | Breadcrumbs | Tailwind UI pattern |
 | Accordion | DaisyUI collapse |
 | Loading spinner | DaisyUI loading |
+| Skeleton | DaisyUI skeleton |
 | Forms | `react-hook-form` + `zod` |
 | Icons | `lucide-react` |
 | Button | DaisyUI btn |
