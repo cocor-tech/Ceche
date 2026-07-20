@@ -3,6 +3,27 @@ import Base from "../layouts/Base.astro";
 ---
 
 <Base title="Ceche — Domain Appraisal Engine">
+  <Fragment slot="head" set:html={`
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Ceche",
+      "description": "Domain Appraisal Engine — evaluate any domain across 16 dimensions",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Linux, macOS, Windows",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "Ceche Contributors"
+      }
+    }
+    </script>
+  `} />
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
     <div class="text-center max-w-3xl mx-auto">
       <h1 class="text-5xl sm:text-6xl font-bold tracking-tight">

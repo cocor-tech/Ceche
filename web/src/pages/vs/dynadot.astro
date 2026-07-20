@@ -1,0 +1,55 @@
+---
+import Base from "../../layouts/Base.astro";
+
+const title = "Ceche vs Dynadot — Domain Appraisal Comparison";
+const description = "Compare Ceche's 16-module domain appraisal against Dynadot's valuation tool. Detailed feature breakdown with pricing and accuracy comparison.";
+---
+
+<Base title={title} description={description}>
+  <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+    <div data-aos="fade-up">
+      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Ceche vs Dynadot</h1>
+      <p class="mt-4 text-lg text-[#9ca3af]">Side-by-side comparison of domain valuation capabilities.</p>
+    </div>
+
+    <div class="mt-12 overflow-x-auto" data-aos="fade-up" data-aos-delay="100">
+      <table class="table table-lg w-full">
+        <thead>
+          <tr class="text-[#9ca3af] text-sm uppercase tracking-wider border-b border-[#1a261a]">
+            <th class="py-4 text-left">Feature</th>
+            <th class="py-4 text-center text-[#ff8800]">Ceche</th>
+            <th class="py-4 text-center">Dynadot</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[
+            ["Valuation Modules", "16", "6"],
+            ["AI-Powered Segmentation", "Yes", "Limited"],
+            ["Bulk Appraisal", "Unlimited", "No"],
+            ["REST API", "Yes", "No"],
+            ["Open Source", "Yes (MIT)", "No"],
+            ["Price", "Free / $49/mo", "Free (basic)"],
+            ["Module Transparency", "Full breakdown", "Opaque"],
+            ["CLI Tool", "Yes", "No"],
+            ["Terminal UI", "Yes", "No"],
+            ["Self-Hosted Option", "Yes", "No"],
+            ["Trademark Detection", "Yes (USPTO + AI)", "No"],
+            ["Authority Signals", "Ahrefs, OPR, Wayback", "No"],
+          ].map(([feature, ceche, them]) => (
+            <tr class="border-b border-[#1a261a]">
+              <td class="py-4 font-medium">{feature}</td>
+              <td class="py-4 text-center text-green-400">{ceche}</td>
+              <td class="py-4 text-center text-[#9ca3af]">{them}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-16 text-center" data-aos="fade-up" data-aos-delay="200">
+      <h2 class="text-2xl font-bold">Start appraising with Ceche</h2>
+      <p class="mt-2 text-[#9ca3af]">Free, open source, and transparent.</p>
+      <a href="/appraise" class="btn btn-primary btn-lg mt-6">Try It Now</a>
+    </div>
+  </section>
+</Base>

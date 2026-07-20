@@ -1,0 +1,59 @@
+---
+import Base from "../layouts/Base.astro";
+
+const { title = "Contact — Ceche", description = "Get in touch with the Ceche team. Sales inquiries, support requests, and partnership opportunities." } = Astro.props;
+---
+
+<Base title={title} description={description}>
+  <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+    <div class="text-center" data-aos="fade-up">
+      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Contact Us</h1>
+      <p class="mt-4 text-lg text-[#9ca3af]">Have questions? We'd love to hear from you.</p>
+    </div>
+
+    <div class="mt-12 card bg-base-200 border border-[#1a261a] p-8" data-aos="fade-up" data-aos-delay="100">
+      <form action="https://formspree.io/f/your-id" method="POST" class="space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="label">
+              <span class="label-text text-sm text-[#9ca3af]">Name</span>
+            </label>
+            <input type="text" name="name" required class="input input-bordered w-full" />
+          </div>
+          <div>
+            <label class="label">
+              <span class="label-text text-sm text-[#9ca3af]">Email</span>
+            </label>
+            <input type="email" name="email" required class="input input-bordered w-full" />
+          </div>
+        </div>
+        <div>
+          <label class="label">
+            <span class="label-text text-sm text-[#9ca3af]">Subject</span>
+          </label>
+          <input type="text" name="subject" required class="input input-bordered w-full" />
+        </div>
+        <div>
+          <label class="label">
+            <span class="label-text text-sm text-[#9ca3af]">Message</span>
+          </label>
+          <textarea name="message" rows="6" required class="textarea textarea-bordered w-full"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary w-full">Send Message</button>
+      </form>
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6" data-aos="fade-up" data-aos-delay="200">
+      {[
+        { label: "GitHub", value: "github.com/cocor-tech/Ceche", href: "https://github.com/cocor-tech/Ceche" },
+        { label: "Email", value: "hello@ceche.app", href: "mailto:hello@ceche.app" },
+        { label: "Issues", value: "Report a bug", href: "https://github.com/cocor-tech/Ceche/issues" },
+      ].map((item) => (
+        <a href={item.href} target="_blank" rel="noopener" class="card bg-base-200 border border-[#1a261a] p-4 text-center hover:border-[#ff8800] transition-colors">
+          <div class="text-sm text-[#9ca3af]">{item.label}</div>
+          <div class="mt-1 font-medium">{item.value}</div>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>

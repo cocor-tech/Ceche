@@ -1,0 +1,38 @@
+---
+import Base from "../layouts/Base.astro";
+
+const { title = "Enterprise — Ceche", description = "Enterprise-grade domain valuation API for high-volume investors, registrars, and marketplaces. Self-hosted, SLA-backed, SSO-integrated." } = Astro.props;
+---
+
+<Base title={title} description={description}>
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+    <div class="text-center max-w-3xl mx-auto" data-aos="fade-up">
+      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Enterprise Domain Valuation</h1>
+      <p class="mt-4 text-lg text-[#9ca3af]">For high-volume investors, registrars, and marketplaces that need reliable domain appraisal at scale.</p>
+    </div>
+
+    <div class="mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-aos="fade-up" data-aos-delay="100">
+      {[
+        { title: "Unlimited Bulk", desc: "Appraise millions of domains with concurrent processing. CLI handles 100+ domains at once. API scales horizontally." },
+        { title: "Self-Hosted", desc: "Deploy on your infrastructure. No data leaves your network. Full control over caching, rate limits, and uptime." },
+        { title: "SLA Guarantee", desc: "99.9% uptime for API endpoints. Dedicated support with 4-hour response time. Priority bug fixes." },
+        { title: "SSO / SAML", desc: "Integrate with your identity provider. Role-based access control for team management." },
+        { title: "Custom Modules", desc: "Add proprietary data sources, adjust weight profiles, or create custom valuation formulas." },
+        { title: "White Label", desc: "Brand the valuation output as your own. Custom domain, styling, and report formatting." },
+      ].map((feature) => (
+        <div class="card bg-base-200 border border-[#1a261a] p-6" data-aos="fade-up">
+          <h3 class="text-lg font-semibold">{feature.title}</h3>
+          <p class="mt-3 text-sm text-[#9ca3af]">{feature.desc}</p>
+        </div>
+      ))}
+    </div>
+
+    <div class="mt-20 text-center" data-aos="fade-up" data-aos-delay="200">
+      <div class="max-w-2xl mx-auto bg-base-200 border border-[#1a261a] rounded-2xl p-10">
+        <h2 class="text-2xl font-bold">Ready to scale?</h2>
+        <p class="mt-3 text-[#9ca3af]">Tell us about your use case and we'll build a plan around your needs.</p>
+        <a href="/contact" class="btn btn-primary btn-lg mt-6">Contact Sales</a>
+      </div>
+    </div>
+  </section>
+</Base>
