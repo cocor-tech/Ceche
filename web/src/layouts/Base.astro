@@ -39,7 +39,7 @@ const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appra
             <div class="flex items-center gap-6 text-sm text-[#9ca3af]">
               <a href="/appraise" class="hover:text-[#ff8800] transition-colors">Appraise</a>
               <a href="/pricing" class="hover:text-[#ff8800] transition-colors">Pricing</a>
-              <a href="/docs" class="hover:text-[#ff8800] transition-colors">Docs</a>
+              
               <a href="/faq" class="hover:text-[#ff8800] transition-colors">FAQ</a>
               <a href="https://github.com/cocor-tech/Ceche" target="_blank" rel="noopener" class="hover:text-[#ff8800] transition-colors">GitHub</a>
               <button id="theme-toggle" class="btn btn-ghost btn-sm" aria-label="Toggle theme">
@@ -62,7 +62,7 @@ const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appra
             <div class="flex gap-6">
               <a href="/appraise" class="hover:text-[#ff8800] transition-colors">Appraise</a>
               <a href="/pricing" class="hover:text-[#ff8800] transition-colors">Pricing</a>
-              <a href="/docs" class="hover:text-[#ff8800] transition-colors">Docs</a>
+              
               <a href="/faq" class="hover:text-[#ff8800] transition-colors">FAQ</a>
               <a href="https://github.com/cocor-tech/Ceche" target="_blank" rel="noopener" class="hover:text-[#ff8800] transition-colors">GitHub</a>
             </div>
@@ -71,8 +71,6 @@ const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appra
       </footer>
     </div>
 
-    <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
-    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
     <script>
       // Theme toggle
       const sun = document.getElementById('sun-icon');
@@ -107,5 +105,11 @@ const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appra
       // AOS init
       AOS.init({ once: true, duration: 800, offset: 100 });
     </script>
+    <Fragment set:html={`
+      <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+      <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+    `} />
   </body>
 </html>
