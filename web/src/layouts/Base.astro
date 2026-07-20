@@ -30,6 +30,15 @@ const { title = "Ceche — Domain Appraisal Engine", description = "Domain Appra
       [data-aos] { opacity: 0; transition: opacity 0.6s ease; }
       [data-aos].aos-animate { opacity: 1; }
 
+      /* Blog prose overrides */
+      .prose pre code { background: none !important; padding: 0 !important; color: inherit !important; font-size: 0.875em !important; }
+      .prose code::before, .prose code::after { content: none !important; }
+      .prose ul { list-style-type: disc; padding-left: 1.25em; }
+      .prose ol { list-style-type: decimal; padding-left: 1.25em; }
+      .prose li { margin-top: 0.25em; margin-bottom: 0.25em; }
+      .prose img { border-radius: 0.75rem; }
+      .prose hr { border-color: #1a261a; }
+
       /* Loading skeleton */
       .skeleton { background: linear-gradient(90deg, #0d120d 25%, #141c14 50%, #0d120d 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
       @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
