@@ -1,0 +1,30 @@
+---
+import Admin from "../../../layouts/Admin.astro";
+---
+
+<Admin title="Blog — Ceche Admin">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Blog Posts</h1>
+    <a href="/admin/blog-edit" class="btn btn-primary btn-sm">New Post</a>
+  </div>
+  <div class="bg-base-200 rounded-xl border border-[#1a261a] overflow-x-auto">
+    <table class="table table-sm w-full">
+      <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left p-3">Title</th><th class="text-center p-3">Status</th><th class="text-right p-3">Date</th><th class="text-center p-3">Actions</th></tr></thead>
+      <tbody id="blog-table"><tr><td colspan="4" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</Admin>
+
+<script>
+async function load() {
+  try {
+    const r = await fetch('/admin/api/blog');
+    const d = await r.json();
+    const t = document.getElementById('blog-table');
+    if (!d.length) { t.innerHTML = '<tr><td colspan="4" class="text-center text-[#9ca3af] py-8">No posts yet.</td></tr>'; return; }
+    t.innerHTML = d.map(p => `<tr class="border-b border-[#1a261a]"><td class="p-3"><a href="/admin/blog-edit?id=${p.id}" class="hover:text-[#ff8800]">${p.title}</a></td><td class="text-center p-3"><span class="badge ${p.status === 'published' ? 'badge-success' : 'badge-ghost'} badge-sm">${p.status}</span></td><td class="text-right p-3 text-[#9ca3af]">${p.published_at ? new Date(p.published_at*1000).toLocaleDateString() : '--'}</td><td class="text-center p-3"><a href="/admin/blog-edit?id=${p.id}" class="btn btn-ghost btn-xs">Edit</a> <button class="btn btn-ghost btn-xs text-red-400" onclick="del(${p.id})">Delete</button></td></tr>`).join('');
+  } catch(e) {}
+}
+async function del(id) { if (confirm('Delete?')) { await fetch('/admin/api/blog/' + id, {method:'DELETE'}); load(); } }
+load();
+</script>

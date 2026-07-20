@@ -1,0 +1,36 @@
+---
+import Admin from "../../layouts/Admin.astro";
+---
+
+<Admin title="Admin Users — Ceche Admin">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Admin Users</h1>
+    <button class="btn btn-primary btn-sm" onclick="inviteUser()">Invite User</button>
+  </div>
+  <div class="bg-base-200 rounded-xl border border-[#1a261a] overflow-x-auto">
+    <table class="table table-sm w-full">
+      <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left p-3">Email</th><th class="text-left p-3">Name</th><th class="text-center p-3">Role</th><th class="text-right p-3">Created</th><th class="text-center p-3">Actions</th></tr></thead>
+      <tbody id="users-table"><tr><td colspan="5" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</Admin>
+
+<script>
+async function load() {
+  try {
+    const r = await fetch('/admin/api/users');
+    const d = await r.json();
+    const t = document.getElementById('users-table');
+    if (!d.length) { t.innerHTML = '<tr><td colspan="5" class="text-center text-[#9ca3af] py-8">No users yet.</td></tr>'; return; }
+    t.innerHTML = d.map(u => `<tr class="border-b border-[#1a261a]"><td class="p-3">${u.email}</td><td class="p-3">${u.name || '--'}</td><td class="text-center p-3"><span class="badge ${u.role === 'admin' ? 'badge-primary' : 'badge-ghost'} badge-sm">${u.role}</span></td><td class="text-right p-3 text-[#9ca3af]">${u.created_at ? new Date(u.created_at*1000).toLocaleDateString() : '--'}</td><td class="text-center p-3"><button class="btn btn-ghost btn-xs text-red-400" onclick="delUser(${u.id})">Remove</button></td></tr>`).join('');
+  } catch(e) {}
+}
+async function inviteUser() {
+  const email = prompt('Email:'); if (!email) return;
+  const password = prompt('Temporary password:'); if (!password) return;
+  await fetch('/admin/api/users', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, password, name: email.split('@')[0]})});
+  load();
+}
+async function delUser(id) { if (confirm('Remove this user?')) { await fetch('/admin/api/users/' + id, {method:'DELETE'}); load(); } }
+load();
+</script>

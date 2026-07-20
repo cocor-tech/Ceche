@@ -4,8 +4,7 @@ import Admin from "../../layouts/Admin.astro";
 
 <Admin title="Dashboard — Ceche Admin">
   <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
-
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     <div class="stat bg-base-200 rounded-xl border border-[#1a261a] p-4">
       <div class="stat-title text-sm text-[#9ca3af]">Total Appraisals</div>
       <div class="stat-value text-2xl font-bold mt-1" id="total-appraisals">--</div>
@@ -23,62 +22,34 @@ import Admin from "../../layouts/Admin.astro";
       <div class="stat-value text-2xl font-bold mt-1 text-[#ff8800]" id="top-domain">--</div>
     </div>
   </div>
-
   <div class="bg-base-200 rounded-xl border border-[#1a261a] p-6">
     <h2 class="text-lg font-semibold mb-4">Recent Appraisals</h2>
     <div class="overflow-x-auto">
       <table class="table table-sm w-full">
-        <thead>
-          <tr class="text-[#9ca3af] text-sm">
-            <th class="text-left pb-3">Domain</th>
-            <th class="text-right pb-3">Value</th>
-            <th class="text-center pb-3">Confidence</th>
-            <th class="text-right pb-3">Source</th>
-            <th class="text-right pb-3">Date</th>
-          </tr>
-        </thead>
-        <tbody id="recent-table">
-          <tr><td colspan="5" class="text-center text-[#9ca3af] py-8">Loading...</td></tr>
-        </tbody>
+        <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left pb-3">Domain</th><th class="text-right pb-3">Value</th><th class="text-center pb-3">Confidence</th><th class="text-right pb-3">Source</th><th class="text-right pb-3">Date</th></tr></thead>
+        <tbody id="recent-table"><tr><td colspan="5" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
       </table>
     </div>
   </div>
 </Admin>
 
 <script>
-  async function loadDashboard() {
-    try {
-      const res = await fetch('/admin/api/stats');
-      const stats = await res.json();
-      document.getElementById('total-appraisals').textContent = stats.total_appraisals?.toLocaleString() || '0';
-      document.getElementById('today-appraisals').textContent = stats.today_appraisals || '0';
-      document.getElementById('avg-value').textContent = stats.avg_value ? `$${Number(stats.avg_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '$0';
-      document.getElementById('top-domain').textContent = stats.top_domain || '--';
-    } catch (e) {
-      console.error('Failed to load stats', e);
-    }
-
-    try {
-      const res = await fetch('/admin/api/recent');
-      const data = await res.json();
-      const tbody = document.getElementById('recent-table');
-      if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-[#9ca3af] py-8">No appraisals yet.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = data.slice(0, 10).map(r => `
-        <tr class="border-b border-[#1a261a]">
-          <td class="py-3">${r.domain}</td>
-          <td class="text-right py-3">${r.estimated_value ? '$' + Number(r.estimated_value).toLocaleString() : '--'}</td>
-          <td class="text-center py-3">${r.confidence || '--'}</td>
-          <td class="text-right py-3">${r.source || '--'}</td>
-          <td class="text-right py-3 text-[#9ca3af]">${r.created_at ? new Date(r.created_at).toLocaleDateString() : '--'}</td>
-        </tr>
-      `).join('');
-    } catch (e) {
-      console.error('Failed to load recent', e);
-    }
-  }
-
-  loadDashboard();
+async function load() {
+  try {
+    const r = await fetch('/admin/api/stats');
+    const s = await r.json();
+    document.getElementById('total-appraisals').textContent = (s.total_appraisals || 0).toLocaleString();
+    document.getElementById('today-appraisals').textContent = (s.today_appraisals || 0).toLocaleString();
+    document.getElementById('avg-value').textContent = s.avg_value ? '$' + Number(s.avg_value).toLocaleString() : '$0';
+    document.getElementById('top-domain').textContent = s.top_domain || '--';
+  } catch(e) {}
+  try {
+    const r = await fetch('/admin/api/recent?limit=10');
+    const d = await r.json();
+    const t = document.getElementById('recent-table');
+    if (!d.length) { t.innerHTML = '<tr><td colspan="5" class="text-center text-[#9ca3af] py-8">No appraisals yet.</td></tr>'; return; }
+    t.innerHTML = d.map(r => `<tr class="border-b border-[#1a261a]"><td class="py-3">${r.domain}</td><td class="text-right py-3">${r.estimated_value ? '$' + Number(r.estimated_value).toLocaleString() : '--'}</td><td class="text-center py-3">${r.confidence || '--'}</td><td class="text-right py-3">${r.source || '--'}</td><td class="text-right py-3 text-[#9ca3af]">${r.created_at ? new Date(r.created_at*1000).toLocaleDateString() : '--'}</td></tr>`).join('');
+  } catch(e) {}
+}
+load();
 </script>

@@ -1,0 +1,63 @@
+---
+import Admin from "../../layouts/Admin.astro";
+---
+
+<Admin title="Edit Blog Post — Ceche Admin">
+  <h1 class="text-2xl font-bold mb-6">Edit Blog Post</h1>
+  <div id="editor" class="max-w-3xl">
+    <div class="text-center text-[#9ca3af] py-8">Loading editor...</div>
+  </div>
+</Admin>
+
+<script>
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const postId = params.get('id');
+  const isNew = !postId;
+
+  document.getElementById('editor').innerHTML = `
+    <form id="blog-form" class="space-y-4">
+      <input id="post-id" type="hidden" value="${postId || 'new'}" />
+      <div><label class="label text-sm text-[#9ca3af]">Title</label><input id="title" class="input input-bordered w-full" required /></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="label text-sm text-[#9ca3af]">Slug</label><input id="slug" class="input input-bordered w-full" /></div>
+        <div><label class="label text-sm text-[#9ca3af]">Status</label><select id="status" class="select select-bordered w-full"><option value="draft">Draft</option><option value="published">Published</option></select></div>
+      </div>
+      <div><label class="label text-sm text-[#9ca3af]">Excerpt</label><textarea id="excerpt" class="textarea textarea-bordered w-full" rows="2"></textarea></div>
+      <div><label class="label text-sm text-[#9ca3af]">Featured Image URL</label><input id="featured_image" class="input input-bordered w-full" /></div>
+      <div><label class="label text-sm text-[#9ca3af]">Content (Markdown)</label><textarea id="content" class="textarea textarea-bordered w-full font-mono text-sm" rows="20"></textarea></div>
+      <div class="flex gap-3"><button type="submit" class="btn btn-primary">Save</button> <a href="/admin/blog" class="btn btn-ghost">Cancel</a></div>
+    </form>
+  `;
+
+  if (!isNew) {
+    const r = await fetch('/admin/api/blog/' + postId);
+    const d = await r.json();
+    document.getElementById('title').value = d.title || '';
+    document.getElementById('slug').value = d.slug || '';
+    document.getElementById('status').value = d.status || 'draft';
+    document.getElementById('excerpt').value = d.excerpt || '';
+    document.getElementById('featured_image').value = d.featured_image || '';
+    document.getElementById('content').value = d.content || '';
+  }
+
+  document.getElementById('blog-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('title').value;
+    const body = {
+      title,
+      slug: document.getElementById('slug').value || title.toLowerCase().replace(/\s+/g, '-').slice(0, 50),
+      status: document.getElementById('status').value,
+      excerpt: document.getElementById('excerpt').value,
+      featured_image: document.getElementById('featured_image').value,
+      content: document.getElementById('content').value,
+    };
+    const url = isNew ? '/admin/api/blog' : '/admin/api/blog/' + postId;
+    const method = isNew ? 'POST' : 'PUT';
+    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    window.location = '/admin/blog';
+  });
+}
+
+init();
+</script>

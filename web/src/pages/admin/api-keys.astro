@@ -1,0 +1,42 @@
+---
+import Admin from "../../layouts/Admin.astro";
+---
+
+<Admin title="API Keys — Ceche Admin">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">API Keys</h1>
+    <button class="btn btn-primary btn-sm" onclick="createKey()">Generate Key</button>
+  </div>
+  <div class="bg-base-200 rounded-xl border border-[#1a261a] overflow-x-auto">
+    <table class="table table-sm w-full">
+      <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left p-3">Name</th><th class="text-center p-3">Tier</th><th class="text-center p-3">Rate Limit</th><th class="text-center p-3">Active</th><th class="text-right p-3">Created</th><th class="text-center p-3">Actions</th></tr></thead>
+      <tbody id="keys-table"><tr><td colspan="6" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+    </table>
+  </div>
+  <div id="new-key-display" class="mt-4 hidden p-4 bg-base-200 border border-[#22c55e] rounded-xl">
+    <p class="text-sm font-bold text-[#22c55e]">Key generated — copy it now. You won't see it again.</p>
+    <code id="new-key-value" class="block mt-2 p-2 bg-black rounded text-sm break-all"></code>
+  </div>
+</Admin>
+
+<script>
+async function load() {
+  try {
+    const r = await fetch('/admin/api/api-keys');
+    const d = await r.json();
+    const t = document.getElementById('keys-table');
+    if (!d.length) { t.innerHTML = '<tr><td colspan="6" class="text-center text-[#9ca3af] py-8">No keys yet.</td></tr>'; return; }
+    t.innerHTML = d.map(k => `<tr class="border-b border-[#1a261a]"><td class="p-3">${k.name}</td><td class="text-center p-3"><span class="badge badge-ghost badge-sm">${k.tier}</span></td><td class="text-center p-3">${k.rate_limit}/min</td><td class="text-center p-3">${k.active ? '<span class="text-green-400">Active</span>' : '<span class="text-red-400">Revoked</span>'}</td><td class="text-right p-3 text-[#9ca3af]">${k.created_at ? new Date(k.created_at*1000).toLocaleDateString() : '--'}</td><td class="text-center p-3"><button class="btn btn-ghost btn-xs text-red-400" onclick="delKey(${k.id})">Revoke</button></td></tr>`).join('');
+  } catch(e) {}
+}
+async function createKey() {
+  const name = prompt('Key name:'); if (!name) return;
+  const r = await fetch('/admin/api/api-keys', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name})});
+  const d = await r.json();
+  document.getElementById('new-key-value').textContent = d.key || '';
+  document.getElementById('new-key-display').classList.remove('hidden');
+  load();
+}
+async function delKey(id) { if (confirm('Revoke this key?')) { await fetch('/admin/api/api-keys/' + id, {method:'DELETE'}); load(); } }
+load();
+</script>
