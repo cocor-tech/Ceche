@@ -1,0 +1,71 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Domain Appraisal Comparison — Ceche" description="Compare Ceche with other domain appraisal tools.">
+  <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+    <div id="loading-state" data-aos="fade-up">
+      <div class="skeleton h-8 w-64 mb-4"></div>
+      <div class="skeleton h-4 w-96 mb-8"></div>
+      <div class="skeleton h-64 w-full"></div>
+    </div>
+    <div id="comparison-content" class="hidden"></div>
+  </section>
+</Base>
+
+<script>
+async function load() {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('slug') || window.location.pathname.split('/').filter(Boolean).pop();
+  try {
+    const r = await fetch('/api/comparisons');
+    const all = await r.json();
+    const comp = all.find(c => c.slug === slug);
+    if (!comp) { document.getElementById('loading-state').innerHTML = '<p class="text-red-400">Comparison not found.</p>'; return; }
+
+    document.title = comp.meta_title || `Ceche vs ${comp.competitor} — Comparison`;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc && comp.meta_description) metaDesc.setAttribute('content', comp.meta_description);
+
+    const container = document.getElementById('comparison-content');
+    container.classList.remove('hidden');
+    document.getElementById('loading-state').classList.add('hidden');
+
+    container.innerHTML = `
+      <div data-aos="fade-up">
+        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Ceche vs ${comp.competitor}</h1>
+        <p class="mt-4 text-lg text-[#9ca3af]">An honest comparison of domain appraisal tools.</p>
+      </div>
+      ${(comp.rows && comp.rows.length) ? `
+        <div class="mt-12 overflow-x-auto" data-aos="fade-up" data-aos-delay="100">
+          <table class="table table-lg w-full">
+            <thead>
+              <tr class="text-[#9ca3af] text-sm uppercase tracking-wider border-b border-[#1a261a]">
+                <th class="py-4 text-left">Feature</th>
+                <th class="py-4 text-center text-[#ff8800]">Ceche</th>
+                <th class="py-4 text-center">${comp.competitor}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(comp.rows || []).map(r => {
+                const feature = r.feature || r[0] || '';
+                const us = r.ceche || r.us || r[1] || '';
+                const them = r.them || r.competitor || r[2] || '';
+                return `<tr class="border-b border-[#1a261a]"><td class="py-4 font-medium">${feature}</td><td class="py-4 text-center text-green-400">${us}</td><td class="py-4 text-center text-[#9ca3af]">${them}</td></tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : ''}
+      <div class="mt-16 text-center" data-aos="fade-up" data-aos-delay="200">
+        <h2 class="text-2xl font-bold">Try Ceche free today</h2>
+        <p class="mt-2 text-[#9ca3af]">No credit card. No limits. Open source.</p>
+        <a href="/appraise" class="btn btn-primary btn-lg mt-6">Appraise a Domain</a>
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('loading-state').innerHTML = '<p class="text-red-400">Failed to load comparison.</p>';
+  }
+}
+load();
+</script>

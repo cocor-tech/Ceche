@@ -104,6 +104,59 @@ def _init_db() -> None:
                     enabled TINYINT(1) DEFAULT 1
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS faq_items (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    question TEXT NOT NULL,
+                    answer TEXT NOT NULL,
+                    sort_order INT DEFAULT 0,
+                    active TINYINT(1) DEFAULT 1
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS pricing_tiers (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL,
+                    price_label VARCHAR(50) NOT NULL,
+                    price_subtext VARCHAR(100) DEFAULT '',
+                    features JSON NOT NULL,
+                    cta_label VARCHAR(50) DEFAULT 'Get Started',
+                    cta_url VARCHAR(255) DEFAULT '',
+                    highlighted TINYINT(1) DEFAULT 0,
+                    sort_order INT DEFAULT 0
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS enterprise_features (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    title VARCHAR(255) NOT NULL,
+                    description TEXT NOT NULL,
+                    sort_order INT DEFAULT 0
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS comparisons (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    competitor VARCHAR(100) NOT NULL,
+                    slug VARCHAR(100) UNIQUE NOT NULL,
+                    rows_data JSON NOT NULL,
+                    meta_title VARCHAR(255) DEFAULT '',
+                    meta_description TEXT DEFAULT '',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS pages (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    slug VARCHAR(100) UNIQUE NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    content TEXT NOT NULL,
+                    meta_title VARCHAR(255) DEFAULT '',
+                    meta_description TEXT DEFAULT '',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """)
             # Seed default rate limits if empty
             cur.execute("SELECT COUNT(*) as c FROM rate_limits")
             if cur.fetchone()["c"] == 0:
@@ -587,7 +640,308 @@ async def admin_domain_detail(request: Request, domain_id: int) -> dict[str, Any
         conn.close()
 
 
-# Initialize tables on first request (not at import time to avoid blocking)
+# --- FAQ ---
+
+@_admin.get("/faq")
+async def admin_faq_list(request: Request) -> list[dict[str, Any]]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM faq_items ORDER BY sort_order")
+        return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@_admin.post("/faq")
+async def admin_faq_create(request: Request) -> dict[str, Any]:
+    _require_admin(request)
+    body = await request.json()
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO faq_items (question, answer, sort_order, active) VALUES (%s,%s,%s,%s)",
+                    (body.get("question", ""), body.get("answer", ""), body.get("sort_order", 0), body.get("active", 1)))
+        return {"ok": True, "id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+@_admin.put("/faq/{item_id}")
+async def admin_faq_update(request: Request, item_id: int) -> dict[str, Any]:
+    _require_admin(request)
+    body = await request.json()
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE faq_items SET question=%s, answer=%s, sort_order=%s, active=%s WHERE id=%s",
+                    (body.get("question", ""), body.get("answer", ""), body.get("sort_order", 0), body.get("active", 1), item_id))
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@_admin.delete("/faq/{item_id}")
+async def admin_faq_delete(request: Request, item_id: int) -> dict[str, Any]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM faq_items WHERE id = %s", (item_id,))
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+# --- Pricing ---
+
+@_admin.get("/pricing")
+async def admin_pricing_list(request: Request) -> list[dict[str, Any]]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM pricing_tiers ORDER BY sort_order")
+        return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@_admin.post("/pricing")
+async def admin_pricing_create(request: Request) -> dict[str, Any]:
+    _require_admin(request)
+    body = await request.json()
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO pricing_tiers (name, price_label, price_subtext, features, cta_label, cta_url, highlighted, sort_order) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (body.get("name", ""), body.get("price_label", ""), body.get("price_subtext", ""),
+                     json.dumps(body.get("features", [])), body.get("cta_label", "Get Started"),
+                     body.get("cta_url", ""), body.get("highlighted", 0), body.get("sort_order", 0)))
+        return {"ok": True, "id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+@_admin.put("/pricing/{tier_id}")
+async def admin_pricing_update(request: Request, tier_id: int) -> dict[str, Any]:
+    _require_admin(request)
+    body = await request.json()
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE pricing_tiers SET name=%s, price_label=%s, price_subtext=%s, features=%s, cta_label=%s, cta_url=%s, highlighted=%s, sort_order=%s WHERE id=%s",
+                    (body.get("name", ""), body.get("price_label", ""), body.get("price_subtext", ""),
+                     json.dumps(body.get("features", [])), body.get("cta_label", "Get Started"),
+                     body.get("cta_url", ""), body.get("highlighted", 0), body.get("sort_order", 0), tier_id))
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@_admin.delete("/pricing/{tier_id}")
+async def admin_pricing_delete(request: Request, tier_id: int) -> dict[str, Any]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM pricing_tiers WHERE id = %s", (tier_id,))
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+# --- Enterprise Features ---
+
+@_admin.get("/features")
+async def admin_features_list(request: Request) -> list[dict[str, Any]]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM enterprise_features ORDER BY sort_order")
+        return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@_admin.post("/features")
+async def admin_features_create(request: Request) -> dict[str, Any]:
+    _require_admin(request)
+    body = await request.json()
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO enterprise_features (title, description, sort_order) VALUES (%s,%s,%s)",
+                    (body.get("title", ""), body.get("description", ""), body.get("sort_order", 0)))
+        return {"ok": True, "id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+@_admin.put("/features/{feature_id}")
+async def admin_features_update(request: Request, feature_id: int) -> dict[str, Any]:
+    _require_admin(request)
+    body = await request.json()
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE enterprise_features SET title=%s, description=%s, sort_order=%s WHERE id=%s",
+                    (body.get("title", ""), body.get("description", ""), body.get("sort_order", 0), feature_id))
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@_admin.delete("/features/{feature_id}")
+async def admin_features_delete(request: Request, feature_id: int) -> dict[str, Any]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM enterprise_features WHERE id = %s", (feature_id,))
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+# --- Comparisons ---
+
+@_admin.get("/comparisons")
+async def admin_comparisons_list(request: Request) -> list[dict[str, Any]]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id, competitor, slug, meta_title, UNIX_TIMESTAMP(created_at) as created_at, UNIX_TIMESTAMP(updated_at) as updated_at FROM comparisons ORDER BY competitor")
+        return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@_admin.get("/comparisons/{slug}")
+async def admin_comparisons_get(request: Request, slug: str) -> dict[str, Any]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM comparisons WHERE slug = %s", (slug,))
+        row = cur.fetchone()
+        return dict(row) if row else {}
+    finally:
+        conn.close()
+
+
+@_admin.post("/comparisons")
+async def admin_comparisons_create(request: Request) -> dict[str, Any]:
+    _require_admin(request)
+    body = await request.json()
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO comparisons (competitor, slug, rows_data, meta_title, meta_description) VALUES (%s,%s,%s,%s,%s)",
+                    (body.get("competitor", ""), body.get("slug", ""), json.dumps(body.get("rows", [])),
+                     body.get("meta_title", ""), body.get("meta_description", "")))
+        return {"ok": True, "id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+@_admin.put("/comparisons/{slug}")
+async def admin_comparisons_update(request: Request, slug: str) -> dict[str, Any]:
+    _require_admin(request)
+    body = await request.json()
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE comparisons SET competitor=%s, rows_data=%s, meta_title=%s, meta_description=%s WHERE slug=%s",
+                    (body.get("competitor", slug), json.dumps(body.get("rows", [])),
+                     body.get("meta_title", ""), body.get("meta_description", ""), slug))
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@_admin.delete("/comparisons/{slug}")
+async def admin_comparisons_delete(request: Request, slug: str) -> dict[str, Any]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM comparisons WHERE slug = %s", (slug,))
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+# --- Pages ---
+
+@_admin.get("/pages")
+async def admin_pages_list(request: Request) -> list[dict[str, Any]]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id, slug, title, meta_title, UNIX_TIMESTAMP(updated_at) as updated_at FROM pages ORDER BY slug")
+        return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@_admin.get("/pages/{slug}")
+async def admin_pages_get(request: Request, slug: str) -> dict[str, Any]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM pages WHERE slug = %s", (slug,))
+        row = cur.fetchone()
+        return dict(row) if row else {}
+    finally:
+        conn.close()
+
+
+@_admin.post("/pages")
+async def admin_pages_create(request: Request) -> dict[str, Any]:
+    _require_admin(request)
+    body = await request.json()
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO pages (slug, title, content, meta_title, meta_description) VALUES (%s,%s,%s,%s,%s)",
+                    (body.get("slug", ""), body.get("title", ""), body.get("content", ""),
+                     body.get("meta_title", ""), body.get("meta_description", "")))
+        return {"ok": True, "id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+@_admin.put("/pages/{slug}")
+async def admin_pages_update(request: Request, slug: str) -> dict[str, Any]:
+    _require_admin(request)
+    body = await request.json()
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE pages SET slug=%s, title=%s, content=%s, meta_title=%s, meta_description=%s WHERE slug=%s",
+                    (body.get("slug", slug), body.get("title", ""), body.get("content", ""),
+                     body.get("meta_title", ""), body.get("meta_description", ""), slug))
+        return {"ok": True}
+    finally:
+        conn.close()
+
+
+@_admin.delete("/pages/{slug}")
+async def admin_pages_delete(request: Request, slug: str) -> dict[str, Any]:
+    _require_admin(request)
+    conn = _db()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM pages WHERE slug = %s", (slug,))
+        return {"ok": True}
+    finally:
+        conn.close()
 _initialized = False
 
 

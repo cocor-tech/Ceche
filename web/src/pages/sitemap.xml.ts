@@ -8,9 +8,10 @@ export async function GET() {
     { loc: "/faq", priority: "0.7" },
     { loc: "/enterprise", priority: "0.8" },
     { loc: "/contact", priority: "0.6" },
-    { loc: "/vs/godaddy", priority: "0.7" },
-    { loc: "/vs/dynadot", priority: "0.7" },
-    { loc: "/vs/estibot", priority: "0.7" },
+    { loc: "/blog", priority: "0.8" },
+    { loc: "/compare?slug=godaddy", priority: "0.7" },
+    { loc: "/compare?slug=dynadot", priority: "0.7" },
+    { loc: "/compare?slug=estibot", priority: "0.7" },
   ];
   const site = "https://ceche.app";
 

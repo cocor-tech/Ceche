@@ -1,50 +1,47 @@
 ---
 import Base from "../layouts/Base.astro";
-
-const { title = "FAQ — Ceche", description = "Frequently asked questions about domain appraisal, valuation factors, and how Ceche determines domain value." } = Astro.props;
-
-const faqs = [
-  { q: "How does Ceche determine a domain's value?", a: "Ceche evaluates domains across 16 modules including RDAP registration data, TLD tier scoring, word segmentation, keyword popularity, CPC/commercial intent, search volume, trademark conflicts, domain authority signals, pronounceability, length analysis, cross-TLD registration, and brand name quality. Each module contributes a weighted multiplier to produce the final estimate." },
-  { q: "How accurate are Ceche appraisals?", a: "Ceche's accuracy depends on the completeness of available data. Registered domains with search traffic, authority signals, and trademark data produce the most reliable estimates. Unregistered or newly created domains have fewer data points and lower confidence ratings. Our confidence label (high, medium, low, very_low) reflects data completeness." },
-  { q: "What factors make a domain valuable?", a: "Key value drivers include: word count (single-word domains are premium), TLD (.com is most valuable), length (shorter is better), keyword popularity (high-search terms boost value), CPC/commercial intent (insurance, finance, law have high CPC multipliers), domain age (older domains rank higher), and authority (backlinks, Wayback history, Ahrefs DR)." },
-  { q: "Is Ceche really free?", a: "Yes. The CLI and TUI are open source under MIT License. You can install ceche via pip, run unlimited local appraisals, use the terminal UI, and access all 16 modules at no cost. The API plan is for users who want web dashboard access, history storage, and programmatic REST API calls." },
-  { q: "How is Ceche different from Estibot or GoDaddy?", a: "Ceche evaluates 16 distinct valuation modules compared to 5-7 factors in most tools. It uses AI-powered word segmentation, real RDAP registration data, Wayback Machine history, and authority signals from Ahrefs and OPR. Ceche is also fully open source and transparent about how each module contributes to the final value." },
-  { q: "Can I appraise domains in bulk?", a: "Yes. The CLI supports bulk appraisal with ceche bulk command, processing up to 100 domains concurrently with built-in rate limiting. The API plan supports unlimited bulk appraisals. The CLI can process thousands of domains from a file or stdin pipe." },
-  { q: "What data sources does Ceche use?", a: "Ceche queries RDAP for registration data, Google Custom Search for search volume, Ahrefs and Open PageRank for authority signals, Wayback Machine for historical snapshots, USPTO for trademark data, and built-in word frequency databases for language analysis. AI providers can optionally enhance word segmentation and CPC classification." },
-  { q: "Can I run Ceche on my own servers?", a: "Yes. Ceche is open source and can be self-hosted. The Enterprise plan includes dedicated support for on-premise deployment with SLA guarantees, SSO integration, and custom configuration." },
-  { q: "How do I get started?", a: "Install the CLI: pip install ceche. Run ceche check example.com for a single appraisal, or ceche start for the terminal UI. For API access, visit the pricing page to start a free trial. The source code is available on GitHub." },
-  { q: "Do you offer refunds?", a: "Yes. API subscriptions come with a 14-day money-back guarantee. Contact us within 14 days of your first payment for a full refund. Enterprise contracts are handled on a case-by-case basis." },
-];
+const title = "FAQ — Ceche";
+const description = "Frequently asked questions about domain appraisal, valuation factors, and how Ceche determines domain value.";
 ---
 
 <Base title={title} description={description}>
-  <script type="application/ld+json" set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": faqs.map(f => ({
-      "@type": "Question",
-      "name": f.q,
-      "acceptedAnswer": { "@type": "Answer", "text": f.a }
-    }))
-  })}>
-  </script>
-
   <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
     <div class="text-center" data-aos="fade-up">
       <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Frequently Asked Questions</h1>
       <p class="mt-4 text-lg text-[#9ca3af]">Everything you need to know about Ceche.</p>
     </div>
-
-    <div class="mt-16 space-y-4" data-aos="fade-up" data-aos-delay="100">
-      {
-        faqs.map((faq, i) => (
-          <div class="collapse collapse-plus bg-base-200 border border-[#1a261a] rounded-xl">
-            <input type="checkbox" />
-            <div class="collapse-title text-base font-medium">{faq.q}</div>
-            <div class="collapse-content text-sm text-[#9ca3af]">{faq.a}</div>
-          </div>
-        ))
-      }
+    <div id="faq-container" class="mt-16 space-y-4" data-aos="fade-up" data-aos-delay="100">
+      <div class="text-center text-[#9ca3af] py-8"><div class="skeleton h-6 w-64 mx-auto mb-4"></div><div class="skeleton h-4 w-48 mx-auto"></div></div>
     </div>
   </section>
 </Base>
+
+<script>
+async function load() {
+  try {
+    const r = await fetch('/api/faq');
+    const items = await r.json();
+    const container = document.getElementById('faq-container');
+    if (!items.length) { container.innerHTML = '<p class="text-center text-[#9ca3af]">No FAQs yet.</p>'; return; }
+    container.innerHTML = items.map((item, i) => `
+      <div class="collapse collapse-plus bg-base-200 border border-[#1a261a] rounded-xl">
+        <input type="checkbox" />
+        <div class="collapse-title text-base font-medium">${item.question}</div>
+        <div class="collapse-content text-sm text-[#9ca3af]">${item.answer}</div>
+      </div>
+    `).join('');
+    // JSON-LD structured data
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": items.map(i => ({ "@type": "Question", "name": i.question, "acceptedAnswer": { "@type": "Answer", "text": i.answer } }))
+    });
+    document.head.appendChild(script);
+  } catch(e) {
+    document.getElementById('faq-container').innerHTML = '<p class="text-center text-red-400">Failed to load FAQs.</p>';
+  }
+}
+load();
+</script>

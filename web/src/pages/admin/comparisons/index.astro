@@ -1,0 +1,36 @@
+---
+import Admin from "../../../layouts/Admin.astro";
+---
+
+<Admin title="Comparisons — Ceche Admin">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Competitor Comparisons</h1>
+    <button class="btn btn-primary btn-sm" onclick="addItem()">Add Comparison</button>
+  </div>
+  <div class="bg-base-200 rounded-xl border border-[#1a261a] overflow-x-auto">
+    <table class="table table-sm w-full">
+      <thead><tr class="text-[#9ca3af] text-sm border-b border-[#1a261a]"><th class="text-left p-3">Competitor</th><th class="text-left p-3">Slug</th><th class="text-center p-3">Actions</th></tr></thead>
+      <tbody id="comp-table"><tr><td colspan="3" class="text-center text-[#9ca3af] py-8">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</Admin>
+
+<script>
+async function load() {
+  const r = await fetch('/admin/api/comparisons'); const d = await r.json();
+  const t = document.getElementById('comp-table');
+  if (!d.length) { t.innerHTML = '<tr><td colspan="3" class="text-center text-[#9ca3af] py-8">No comparisons yet.</td></tr>'; return; }
+  t.innerHTML = d.map(i => `<tr class="border-b border-[#1a261a]"><td class="p-3 font-medium">${i.competitor}</td><td class="p-3 text-[#9ca3af]">${i.slug}</td><td class="text-center p-3"><button class="btn btn-ghost btn-xs" onclick="editItem('${i.slug}')">Edit</button> <button class="btn btn-ghost btn-xs text-red-400" onclick="delItem('${i.slug}')">Delete</button></td></tr>`).join('');
+}
+function addItem() {
+  const c = prompt('Competitor name:'); if (!c) return;
+  const s = prompt('Slug (e.g. godaddy):'); if (!s) return;
+  fetch('/admin/api/comparisons', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({competitor:c, slug:s, rows:[]})}).then(load);
+}
+function editItem(slug) {
+  const c = prompt('Competitor name:'); if (c === null) return;
+  fetch('/admin/api/comparisons/'+slug, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({competitor:c,slug:slug,rows:[]})}).then(load);
+}
+async function delItem(slug) { if (confirm('Delete?')) { await fetch('/admin/api/comparisons/'+slug, {method:'DELETE'}); load(); } }
+load();
+</script>

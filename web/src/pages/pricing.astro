@@ -1,7 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
-
-const { title = "Pricing — Ceche", description = "Free domain appraisal CLI, affordable API access, and enterprise plans for high-volume domain investors." } = Astro.props;
+const title = "Pricing — Ceche";
+const description = "Free domain appraisal CLI, affordable API access, and enterprise plans for high-volume domain investors.";
 ---
 
 <Base title={title} description={description}>
@@ -10,87 +10,34 @@ const { title = "Pricing — Ceche", description = "Free domain appraisal CLI, a
       <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">Simple Pricing</h1>
       <p class="mt-4 text-lg text-[#9ca3af]">Start free. Scale as you grow.</p>
     </div>
-
-    <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-      <!-- Free Tier -->
-      <div class="card bg-base-200 border border-[#1a261a] p-8" data-aos="fade-up" data-aos-delay="0">
-        <h3 class="text-lg font-semibold">CLI</h3>
-        <p class="text-3xl font-bold mt-4">Free</p>
-        <p class="text-sm text-[#9ca3af] mt-1">Open source</p>
-        <ul class="mt-6 space-y-3 text-sm">
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> Single domain appraisal
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> Bulk check (up to 100 domains)
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> Terminal UI (TUI)
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> All 16 modules
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> MIT License
-          </li>
-        </ul>
-        <a href="https://github.com/cocor-tech/Ceche" target="_blank" rel="noopener" class="btn btn-outline btn-primary w-full mt-8">
-          Get Started
-        </a>
-      </div>
-
-      <!-- API Tier -->
-      <div class="card bg-base-200 border-2 border-[#ff8800] p-8 relative" data-aos="fade-up" data-aos-delay="100">
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#ff8800] text-white text-xs font-semibold px-4 py-0.5 rounded-full">
-          Recommended
-        </div>
-        <h3 class="text-lg font-semibold">API</h3>
-        <p class="text-3xl font-bold mt-4">$49<span class="text-lg text-[#9ca3af]">/mo</span></p>
-        <p class="text-sm text-[#9ca3af] mt-1">1,000 appraisals/mo</p>
-        <ul class="mt-6 space-y-3 text-sm">
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> REST API access
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> Bulk check (unlimited)
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> Web dashboard
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> Appraisal history
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> CSV export
-          </li>
-        </ul>
-        <a href="https://github.com/cocor-tech/Ceche/issues" class="btn btn-primary w-full mt-8">Start Free Trial</a>
-      </div>
-
-      <!-- Enterprise Tier -->
-      <div class="card bg-base-200 border border-[#1a261a] p-8" data-aos="fade-up" data-aos-delay="200">
-        <h3 class="text-lg font-semibold">Enterprise</h3>
-        <p class="text-3xl font-bold mt-4">Custom</p>
-        <p class="text-sm text-[#9ca3af] mt-1">Volume pricing</p>
-        <ul class="mt-6 space-y-3 text-sm">
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> Self-hosted option
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> SLA guarantee
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> SSO / SAML
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> Priority support
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="text-[#22c55e] mt-0.5">&#10003;</span> Custom integrations
-          </li>
-        </ul>
-        <a href="https://github.com/cocor-tech/Ceche/issues" class="btn btn-outline btn-primary w-full mt-8">Contact Sales</a>
-      </div>
+    <div id="pricing-container" class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+      <div class="col-span-full text-center text-[#9ca3af] py-16"><div class="skeleton h-6 w-48 mx-auto mb-4"></div><div class="skeleton h-4 w-64 mx-auto"></div></div>
     </div>
   </section>
 </Base>
+
+<script>
+async function load() {
+  try {
+    const r = await fetch('/api/pricing');
+    const tiers = await r.json();
+    const container = document.getElementById('pricing-container');
+    if (!tiers.length) { container.innerHTML = '<p class="col-span-full text-center text-[#9ca3af]">No pricing configured.</p>'; return; }
+    container.innerHTML = tiers.map(t => `
+      <div class="card bg-base-200 border ${t.highlighted ? 'border-2 border-[#ff8800]' : 'border-[#1a261a]'} p-8 relative">
+        ${t.highlighted ? '<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#ff8800] text-white text-xs font-semibold px-4 py-0.5 rounded-full">Recommended</div>' : ''}
+        <h3 class="text-lg font-semibold">${t.name}</h3>
+        <p class="text-3xl font-bold mt-4">${t.price_label}</p>
+        ${t.price_subtext ? `<p class="text-sm text-[#9ca3af] mt-1">${t.price_subtext}</p>` : ''}
+        <ul class="mt-6 space-y-3 text-sm">
+          ${(t.features || []).map(f => `<li class="flex items-start gap-2"><span class="text-[#22c55e] mt-0.5">&#10003;</span> ${f}</li>`).join('')}
+        </ul>
+        <a href="${t.cta_url || '/appraise'}" class="btn ${t.highlighted ? 'btn-primary' : 'btn-outline btn-primary'} w-full mt-8">${t.cta_label}</a>
+      </div>
+    `).join('');
+  } catch(e) {
+    document.getElementById('pricing-container').innerHTML = '<p class="col-span-full text-center text-red-400">Failed to load pricing.</p>';
+  }
+}
+load();
+</script>

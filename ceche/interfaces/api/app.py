@@ -111,6 +111,83 @@ async def public_blog_post(slug: str) -> dict[str, Any]:
         conn.close()
 
 
+# --- Public content endpoints (no auth) ---
+
+@app.get("/api/faq")
+async def public_faq() -> list[dict[str, Any]]:
+    conn = _mysql_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT question, answer, sort_order FROM faq_items WHERE active = 1 ORDER BY sort_order")
+        return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@app.get("/api/pricing")
+async def public_pricing() -> list[dict[str, Any]]:
+    conn = _mysql_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT name, price_label, price_subtext, features, cta_label, cta_url, highlighted, sort_order FROM pricing_tiers ORDER BY sort_order")
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if isinstance(d.get("features"), str):
+                import json as _j
+                d["features"] = _j.loads(d["features"])
+            result.append(d)
+        return result
+    finally:
+        conn.close()
+
+
+@app.get("/api/features")
+async def public_features() -> list[dict[str, Any]]:
+    conn = _mysql_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT title, description, sort_order FROM enterprise_features ORDER BY sort_order")
+        return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+@app.get("/api/comparisons")
+async def public_comparisons() -> list[dict[str, Any]]:
+    conn = _mysql_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT competitor, slug, rows_data, meta_title, meta_description FROM comparisons ORDER BY competitor")
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if isinstance(d.get("rows_data"), str):
+                import json as _j
+                d["rows"] = _j.loads(d["rows_data"])
+                del d["rows_data"]
+            result.append(d)
+        return result
+    finally:
+        conn.close()
+
+
+@app.get("/api/pages/{slug}")
+async def public_page(slug: str) -> dict[str, Any]:
+    conn = _mysql_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT slug, title, content, meta_title, meta_description FROM pages WHERE slug = %s", (slug,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Page not found")
+        return dict(row)
+    finally:
+        conn.close()
+
+
 @app.post("/appraise")
 async def appraise_domain(req: AppraiseRequest) -> dict[str, Any]:
     engine = _get_engine()

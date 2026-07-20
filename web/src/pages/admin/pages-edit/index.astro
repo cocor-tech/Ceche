@@ -1,0 +1,43 @@
+---
+import Admin from "../../../layouts/Admin.astro";
+---
+
+<Admin title="Edit Page — Ceche Admin">
+  <h1 class="text-2xl font-bold mb-6">Edit Page</h1>
+  <div id="editor"></div>
+</Admin>
+
+<script>
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('slug');
+  if (!slug) { document.getElementById('editor').innerHTML = '<p class="text-red-400">No slug specified.</p>'; return; }
+
+  const r = await fetch('/admin/api/pages/' + slug);
+  const data = await r.json();
+
+  document.getElementById('editor').innerHTML = `
+    <form id="page-form" class="space-y-4 max-w-3xl">
+      <div><label class="label text-sm text-[#9ca3af]">Slug</label><input id="page-slug" class="input input-bordered w-full" value="${data.slug || ''}" /></div>
+      <div><label class="label text-sm text-[#9ca3af]">Title</label><input id="title" class="input input-bordered w-full" value="${(data.title||'').replace(/"/g,'&quot;')}" /></div>
+      <div><label class="label text-sm text-[#9ca3af]">Meta Title (SEO)</label><input id="meta_title" class="input input-bordered w-full" value="${(data.meta_title||'').replace(/"/g,'&quot;')}" /></div>
+      <div><label class="label text-sm text-[#9ca3af]">Meta Description (SEO)</label><textarea id="meta_description" class="textarea textarea-bordered w-full" rows="2">${(data.meta_description||'').replace(/</g,'&lt;')}</textarea></div>
+      <div><label class="label text-sm text-[#9ca3af]">Content (Markdown)</label><textarea id="content" class="textarea textarea-bordered w-full font-mono text-sm" rows="20">${(data.content||'').replace(/</g,'&lt;')}</textarea></div>
+      <div class="flex gap-3"><button type="submit" class="btn btn-primary">Save</button> <a href="/admin/pages" class="btn btn-ghost">Cancel</a></div>
+    </form>
+  `;
+
+  document.getElementById('page-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await fetch('/admin/api/pages/' + slug, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      slug: document.getElementById('page-slug').value,
+      title: document.getElementById('title').value,
+      content: document.getElementById('content').value,
+      meta_title: document.getElementById('meta_title').value,
+      meta_description: document.getElementById('meta_description').value,
+    })});
+    window.location = '/admin/pages';
+  });
+}
+init();
+</script>
