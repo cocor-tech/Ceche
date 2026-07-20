@@ -1,0 +1,73 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - fastapi
+      - astro
+    networks:
+      - ceche
+    restart: unless-stopped
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "8080"
+    environment:
+      - CECHE_ADMIN_SECRET=${CECHE_ADMIN_SECRET:-change-me}
+      - CECHE_ADMIN_PASSWORD=${CECHE_ADMIN_PASSWORD:-admin}
+      - CECHE_MYSQL_HOST=${CECHE_MYSQL_HOST:-mysql}
+      - CECHE_MYSQL_PORT=${CECHE_MYSQL_PORT:-3306}
+      - CECHE_MYSQL_USER=${CECHE_MYSQL_USER:-ceche}
+      - CECHE_MYSQL_PASSWORD=${CECHE_MYSQL_PASSWORD:-ceche}
+      - CECHE_MYSQL_DATABASE=${CECHE_MYSQL_DATABASE:-ceche}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ceche
+    restart: unless-stopped
+
+  astro:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    expose:
+      - "4321"
+    networks:
+      - ceche
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8
+    expose:
+      - "3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-ceche}
+      - MYSQL_USER=${MYSQL_USER:-ceche}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-ceche}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - ceche
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+
+networks:
+  ceche:
+    driver: bridge
