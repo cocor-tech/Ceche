@@ -1,0 +1,20 @@
+-- Ceche Enterprise Features Seed Data
+INSERT INTO enterprise_features (title, description, sort_order) VALUES
+('Unlimited Bulk',
+ 'Appraise millions of domains with concurrent processing. The CLI handles 100+ domains simultaneously and the API scales horizontally with load balancing for enterprise workloads.',
+ 1),
+('Self-Hosted',
+ 'Deploy on your own infrastructure with Docker. No data leaves your network. Full control over caching policies, rate limits, and system uptime.',
+ 2),
+('SLA Guarantee',
+ '99.9 percent uptime for API endpoints with dedicated support and 4-hour response time. Priority handling for bug fixes and feature requests.',
+ 3),
+('SSO and SAML',
+ 'Integrate with Okta, Azure AD, or Google Workspace. Role-based access control for team management with granular permission levels.',
+ 4),
+('Custom Modules',
+ 'Add proprietary data sources, adjust module weight profiles, or create custom valuation formulas tailored to your specific market or domain categories.',
+ 5),
+('White Label',
+ 'Brand the valuation output as your own. Custom domain, styling, report formatting, and API response structure. Full whitelabeling for marketplace integrations.',
+ 6);
